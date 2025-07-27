@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CWatcher - Linux Server Monitoring</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #0ea5e9;
+            --primary-dark: #0284c7;
+            --secondary: #10b981;
+            --accent: #8b5cf6;
+            --dark-bg: #0f172a;
+            --darker-bg: #020617;
+            --card-bg: #1e293b;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+        }
+        
+        body {
+            background-color: var(--darker-bg);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .tech-card {
+            background-color: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+        
+        .tech-gradient {
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+        }
+        
+        .tech-button {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            transition: all 0.3s ease;
+        }
+        
+        .tech-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(14, 165, 233, 0.4);
+        }
+        
+        .server-item {
+            border-left: 3px solid transparent;
+            transition: all 0.2s ease;
+        }
+        
+        .server-item:hover, .server-item.active {
+            border-left: 3px solid var(--primary);
+            background-color: rgba(14, 165, 233, 0.1);
+        }
+        
+        .metric-card {
+            background-color: rgba(30, 41, 59, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+        }
+        
+        .metric-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+        
+        .glow {
+            box-shadow: 0 0 15px rgba(14, 165, 233, 0.5);
+        }
+        
+        .status-dot {
+            height: 8px;
+            width: 8px;
+            border-radius: 50%;
+        }
+        
+        .status-online {
+            background-color: #10b981;
+            box-shadow: 0 0 5px #10b981;
+        }
+        
+        .status-warning {
+            background-color: #f59e0b;
+            box-shadow: 0 0 5px #f59e0b;
+        }
+        
+        .status-offline {
+            background-color: #ef4444;
+            box-shadow: 0 0 5px #ef4444;
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: var(--darker-bg);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary-dark);
+            border-radius: 3px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary);
+        }
+        
+        /* Animations */
+        @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite ease-in-out;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 240px;
+            width: 100%;
+        }
+        
+        /* Modal styles */
+        .modal {
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        
+        .modal-enter {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        
+        .modal-enter-active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        /* Loading animation */
+        .loading-bar {
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary), var(--accent));
+            background-size: 200% 100%;
+            animation: loading 2s infinite;
+        }
+        
+        @keyframes loading {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <div id="app" class="flex flex-col h-screen">
+        <!-- Dashboard Screen (shown by default) -->
+        <div id="dashboard-screen" class="h-screen flex flex-col">
+            <!-- Header -->
+            <header class="bg-gray-900 border-b border-gray-800 py-3 px-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <i class="fas fa-chart-network text-2xl text-blue-500 mr-2"></i>
+                        <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-cyan-300">CWatcher</h1>
+                    </div>
+                    
+                    <div class="flex items-center space-x-4">
+                        <div class="flex items-center">
+                            <div class="status-dot status-online mr-2"></div>
+                            <span class="text-sm font-medium">192.168.1.50</span>
+                        </div>
+                        
+                        <button class="p-2 rounded-full hover:bg-gray-800" onclick="showAddServerModal()">
+                            <i class="fas fa-plus text-gray-300"></i>
+                        </button>
+                        
+                        <button class="p-2 rounded-full hover:bg-gray-800" onclick="showLoginScreen()">
+                            <i class="fas fa-sign-out-alt text-gray-300"></i>
+                        </button>
+                    </div>
+                </div>
+            </header>
+            
+            <!-- Main Content -->
+            <div class="flex-1 flex overflow-hidden">
+                <!-- Sidebar -->
+                <aside class="w-64 bg-gray-900 border-r border-gray-800 flex flex-col">
+                    <div class="p-4">
+                        <div class="relative">
+                            <i class="fas fa-search absolute left-3 top-2.5 text-gray-500"></i>
+                            <input type="text" placeholder="Search servers..." class="w-full bg-gray-800 border border-gray-700 rounded-lg py-2 pl-10 pr-3 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500">
+                        </div>
+                    </div>
+                    
+                    <div class="px-3 py-2">
+                        <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Servers</h3>
+                    </div>
+                    
+                    <div class="flex-1 overflow-y-auto">
+                        <div class="px-2 space-y-1">
+                            <div class="server-item active flex items-center justify-between p-2 rounded-md cursor-pointer" onclick="selectServer(this, 'Web Server', '192.168.1.50', 'online')">
+                                <div class="flex items-center">
+                                    <div class="status-dot status-online mr-2"></div>
+                                    <span>192.168.1.50</span>
+                                </div>
+                                <div class="text-xs text-gray-400">Web Server</div>
+                            </div>
+                            
+                            <div class="server-item flex items-center justify-between p-2 rounded-md cursor-pointer" onclick="selectServer(this, 'Database', '10.0.0.15', 'warning')">
+                                <div class="flex items-center">
+                                    <div class="status-dot status-warning mr-2"></div>
+                                    <span>10.0.0.15</span>
+                                </div>
+                                <div class="text-xs text-gray-400">Database</div>
+                            </div>
+                            
+                            <div class="server-item flex items-center justify-between p-2 rounded-md cursor-pointer" onclick="selectServer(this, 'File Server', '172.16.254.1', 'offline')">
+                                <div class="flex items-center">
+                                    <div class="status-dot status-offline mr-2"></div>
+                                    <span>172.16.254.1</span>
+                                </div>
+                                <div class="text-xs text-gray-400">File Server</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="p-4 border-t border-gray-800">
+                        <button class="tech-button w-full py-2 px-4 rounded-lg text-white font-medium flex items-center justify-center" onclick="showAddServerModal()">
+                            <i class="fas fa-plus mr-2"></i>
+                            Add Server
+                        </button>
+                    </div>
+                </aside>
+                
+                <!-- Main Dashboard -->
+                <main class="flex-1 overflow-y-auto bg-gray-900 p-6">
+                    <div class="mb-6 flex items-center justify-between">
+                        <div>
+                            <h2 class="text-2xl font-bold" id="server-name">Web Server</h2>
+                            <div class="flex items-center mt-1">
+                                <span class="text-sm text-gray-400 mr-3" id="server-ip">192.168.1.50</span>
+                                <span class="px-2 py-0.5 text-xs rounded-full bg-green-900 text-green-300" id="server-status">Online</span>
+                            </div>
+                        </div>
+                        
+                        <div class="flex space-x-3">
+                            <button class="px-3 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg flex items-center">
+                                <i class="fas fa-sync-alt mr-2"></i>
+                                Refresh
+                            </button>
+                            
+                            <button class="px-3 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg flex items-center">
+                                <i class="fas fa-cog mr-2"></i>
+                                Settings
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- System Overview Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                        <!-- CPU Card -->
+                        <div class="metric-card p-4 rounded-lg">
+                            <div class="flex items-center justify-between mb-3">
+                                <h3 class="text-lg font-medium">CPU</h3>
+                                <i class="fas fa-microchip text-blue-500"></i>
+                            </div>
+                            
+                            <div class="flex items-end justify-between">
+                                <div>
+                                    <div class="text-3xl font-bold" id="cpu-percentage">42%</div>
+                                    <div class="text-sm text-gray-400" id="cpu-info">4 cores @ 2.4GHz</div>
+                                </div>
+                                
+                                <div class="w-16 h-16">
+                                    <svg viewBox="0 0 36 36" class="w-full h-full">
+                                        <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#2d3748" stroke-width="3" />
+                                        <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#3b82f6" stroke-width="3" stroke-dasharray="42, 100" id="cpu-circle" />
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Memory Card -->
+                        <div class="metric-card p-4 rounded-lg">
+                            <div class="flex items-center justify-between mb-3">
+                                <h3 class="text-lg font-medium">Memory</h3>
+                                <i class="fas fa-memory text-purple-500"></i>
+                            </div>
+                            
+                            <div class="flex items-end justify-between">
+                                <div>
+                                    <div class="text-3xl font-bold" id="memory-percentage">68%</div>
+                                    <div class="text-sm text-gray-400" id="memory-info">5.4 GB / 8 GB</div>
+                                </div>
+                                
+                                <div class="w-16 h-16">
+                                    <svg viewBox="0 0 36 36" class="w-full h-full">
+                                        <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#2d3748" stroke-width="3" />
+                                        <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#8b5cf6" stroke-width="3" stroke-dasharray="68, 100" id="memory-circle" />
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Disk Card -->
+                        <div class="metric-card p-4 rounded-lg">
+                            <div class="flex items-center justify-between mb-3">
+                                <h3 class="text-lg font-medium">Disk</h3>
+                                <i class="fas fa-hdd text-green-500"></i>
+                            </div>
+                            
+                            <div class="flex items-end justify-between">
+                                <div>
+                                    <div class="text-3xl font-bold" id="disk-percentage">76%</div>
+                                    <div class="text-sm text-gray-400" id="disk-info">380 GB / 500 GB</div>
+                                </div>
+                                
+                                <div class="w-16 h-16">
+                                    <svg viewBox="0 0 36 36" class="w-full h-full">
+                                        <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#2d3748" stroke-width="3" />
+                                        <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#10b981" stroke-width="3" stroke-dasharray="76, 100" id="disk-circle" />
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Network Card -->
+                        <div class="metric-card p-4 rounded-lg">
+                            <div class="flex items-center justify-between mb-3">
+                                <h3 class="text-lg font-medium">Network</h3>
+                                <i class="fas fa-network-wired text-yellow-500"></i>
+                            </div>
+                            
+                            <div class="flex items-end justify-between">
+                                <div>
+                                    <div class="flex items-center">
+                                        <i class="fas fa-arrow-down text-green-500 mr-1"></i>
+                                        <span class="text-lg font-bold" id="network-download">2.4 MB/s</span>
+                                    </div>
+                                    <div class="flex items-center mt-1">
+                                        <i class="fas fa-arrow-up text-blue-500 mr-1"></i>
+                                        <span class="text-lg font-bold" id="network-upload">0.8 MB/s</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="w-16 h-16 flex items-center justify-center">
+                                    <i class="fas fa-chart-line text-3xl text-yellow-500"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Charts Section -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                        <!-- CPU Chart -->
+                        <div class="tech-card p-4">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-lg font-medium">CPU Usage</h3>
+                                <div class="flex space-x-2">
+                                    <button class="px-2 py-1 text-xs bg-blue-600 rounded-md">1h</button>
+                                    <button class="px-2 py-1 text-xs bg-gray-700 rounded-md">6h</button>
+                                    <button class="px-2 py-1 text-xs bg-gray-700 rounded-md">24h</button>
+                                </div>
+                            </div>
+                            
+                            <div class="chart-container">
+                                <canvas id="cpuChart"></canvas>
+                            </div>
+                            
+                            <div class="mt-4 grid grid-cols-2 gap-4">
+                                <div class="bg-gray-800 p-3 rounded-lg">
+                                    <div class="text-sm text-gray-400">Average</div>
+                                    <div class="text-xl font-bold" id="cpu-average">38.5%</div>
+                                </div>
+                                <div class="bg-gray-800 p-3 rounded-lg">
+                                    <div class="text-sm text-gray-400">Peak</div>
+                                    <div class="text-xl font-bold" id="cpu-peak">72.1%</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Memory Chart -->
+                        <div class="tech-card p-4">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-lg font-medium">Memory Usage</h3>
+                                <div class="flex space-x-2">
+                                    <button class="px-2 py-1 text-xs bg-blue-600 rounded-md">1h</button>
+                                    <button class="px-2 py-1 text-xs bg-gray-700 rounded-md">6h</button>
+                                    <button class="px-2 py-1 text-xs bg-gray-700 rounded-md">24h</button>
+                                </div>
+                            </div>
+                            
+                            <div class="chart-container">
+                                <canvas id="memoryChart"></canvas>
+                            </div>
+                            
+                            <div class="mt-4 grid grid-cols-3 gap-4">
+                                <div class="bg-gray-800 p-3 rounded-lg">
+                                    <div class="text-sm text-gray-400">Used</div>
+                                    <div class="text-xl font-bold" id="memory-used">5.4 GB</div>
+                                </div>
+                                <div class="bg-gray-800 p-3 rounded-lg">
+                                    <div class="text-sm text-gray-400">Cached</div>
+                                    <div class="text-xl font-bold" id="memory-cached">1.2 GB</div>
+                                </div>
+                                <div class="bg-gray-800 p-3 rounded-lg">
+                                    <div class="text-sm text-gray-400">Free</div>
+                                    <div class="text-xl font-bold" id="memory-free">1.4 GB</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Disk I/O Chart -->
+                        <div class="tech-card p-4">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-lg font-medium">Disk I/O</h3>
+                                <div class="flex space-x-2">
+                                    <button class="px-2 py-1 text-xs bg-blue-600 rounded-md">1h</button>
+                                    <button class="px-2 py-1 text-xs bg-gray-700 rounded-md">6h</button>
+                                    <button class="px-2 py-1 text-xs bg-gray-700 rounded-md">24h</button>
+                                </div>
+                            </div>
+                            
+                            <div class="chart-container">
+                                <canvas id="diskChart"></canvas>
+                            </div>
+                            
+                            <div class="mt-4 grid grid-cols-2 gap-4">
+                                <div class="bg-gray-800 p-3 rounded-lg">
+                                    <div class="text-sm text-gray-400">Read</div>
+                                    <div class="text-xl font-bold" id="disk-read">12.4 MB/s</div>
+                                </div>
+                                <div class="bg-gray-800 p-3 rounded-lg">
+                                    <div class="text-sm text-gray-400">Write</div>
+                                    <div class="text-xl font-bold" id="disk-write">8.7 MB/s</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Network Traffic Chart -->
+                        <div class="tech-card p-4">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-lg font-medium">Network Traffic</h3>
+                                <div class="flex space-x-2">
+                                    <button class="px-2 py-1 text-xs bg-blue-600 rounded-md">1h</button>
+                                    <button class="px-2 py-1 text-xs bg-gray-700 rounded-md">6h</button>
+                                    <button class="px-2 py-1 text-xs bg-gray-700 rounded-md">24h</button>
+                                </div>
+                            </div>
+                            
+                            <div class="chart-container">
+                                <canvas id="networkChart"></canvas>
+                            </div>
+                            
+                            <div class="mt-4 grid grid-cols-3 gap-4">
+                                <div class="bg-gray-800 p-3 rounded-lg">
+                                    <div class="text-sm text-gray-400">Download</div>
+                                    <div class="text-xl font-bold" id="network-download-total">2.4 MB/s</div>
+                                </div>
+                                <div class="bg-gray-800 p-3 rounded-lg">
+                                    <div class="text-sm text-gray-400">Upload</div>
+                                    <div class="text-xl font-bold" id="network-upload-total">0.8 MB/s</div>
+                                </div>
+                                <div class="bg-gray-800 p-3 rounded-lg">
+                                    <div class="text-sm text-gray-400">Total</div>
+                                    <div class="text-xl font-bold" id="network-total">1.2 GB</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- System Information -->
+                    <div class="tech-card p-4">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-medium">System Information</h3>
+                            <button class="px-3 py-1 text-sm bg-gray-800 hover:bg-gray-700 rounded-md flex items-center">
+                                <i class="fas fa-expand-alt mr-2"></i>
+                                Details
+                            </button>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <div>
+                                <h4 class="text-sm font-medium text-gray-400 mb-2">Hardware</h4>
+                                <div class="space-y-2">
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-400">Hostname:</span>
+                                        <span id="hostname">web-server-01</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-400">CPU:</span>
+                                        <span id="cpu-model">Intel Xeon E5-2680 v4</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-400">Cores:</span>
+                                        <span id="cpu-cores">4 (8 threads)</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-400">Memory:</span>
+                                        <span id="memory-total">8 GB DDR4</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <h4 class="text-sm font-medium text-gray-400 mb-2">Operating System</h4>
+                                <div class="space-y-2">
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-400">OS:</span>
+                                        <span id="os-name">Ubuntu 22.04 LTS</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-400">Kernel:</span>
+                                        <span id="kernel-version">5.15.0-58-generic</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-400">Uptime:</span>
+                                        <span id="uptime">43 days, 7 hours</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-400">Load Avg:</span>
+                                        <span id="load-avg">1.52, 1.24, 0.92</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <h4 class="text-sm font-medium text-gray-400 mb-2">Storage</h4>
+                                <div class="space-y-2">
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-400">Disk:</span>
+                                        <span id="disk-type">500 GB SSD</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-400">Used:</span>
+                                        <span id="disk-used">380 GB (76%)</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-400">Free:</span>
+                                        <span id="disk-free">120 GB (24%)</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-400">File System:</span>
+                                        <span id="file-system">ext4</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </div>
+        
+        <!-- Login Screen (initially hidden) -->
+        <div id="login-screen" class="hidden flex items-center justify-center h-screen w-full">
+            <div class="tech-card p-8 w-full max-w-md mx-4">
+                <div class="flex justify-center mb-6">
+                    <div class="flex items-center">
+                        <i class="fas fa-chart-network text-4xl text-blue-500 mr-3"></i>
+                        <h1 class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-cyan-300">CWatcher</h1>
+                    </div>
+                </div>
+                <h2 class="text-xl font-semibold text-center mb-6">Linux Server Monitoring</h2>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Server IP Address</label>
+                        <div class="relative">
+                            <i class="fas fa-server absolute left-3 top-3 text-gray-400"></i>
+                            <input type="text" placeholder="192.168.1.100" class="w-full bg-gray-800 border border-gray-700 rounded-lg py-2 pl-10 pr-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Username</label>
+                        <div class="relative">
+                            <i class="fas fa-user absolute left-3 top-3 text-gray-400"></i>
+                            <input type="text" placeholder="admin" class="w-full bg-gray-800 border border-gray-700 rounded-lg py-2 pl-10 pr-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Password</label>
+                        <div class="relative">
+                            <i class="fas fa-lock absolute left-3 top-3 text-gray-400"></i>
+                            <input type="password" placeholder="••••••••" class="w-full bg-gray-800 border border-gray-700 rounded-lg py-2 pl-10 pr-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">SSH Port (Optional)</label>
+                        <div class="relative">
+                            <i class="fas fa-network-wired absolute left-3 top-3 text-gray-400"></i>
+                            <input type="text" placeholder="22" class="w-full bg-gray-800 border border-gray-700 rounded-lg py-2 pl-10 pr-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                    </div>
+                    
+                    <div class="pt-2">
+                        <button onclick="showDashboard()" class="tech-button w-full py-2.5 px-4 rounded-lg text-white font-medium flex items-center justify-center">
+                            <i class="fas fa-sign-in-alt mr-2"></i>
+                            Connect to Server
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="mt-6">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-sm font-medium text-gray-300">Recent Servers</h3>
+                        <button class="text-xs text-blue-400 hover:text-blue-300">Clear All</button>
+                    </div>
+                    
+                    <div class="mt-2 space-y-2">
+                        <div class="server-item flex items-center justify-between p-2 rounded-md cursor-pointer" onclick="showDashboard()">
+                            <div class="flex items-center">
+                                <div class="status-dot status-online mr-2"></div>
+                                <span>192.168.1.50</span>
+                            </div>
+                            <div class="text-xs text-gray-400">Web Server</div>
+                        </div>
+                        
+                        <div class="server-item flex items-center justify-between p-2 rounded-md cursor-pointer" onclick="showDashboard()">
+                            <div class="flex items-center">
+                                <div class="status-dot status-warning mr-2"></div>
+                                <span>10.0.0.15</span>
+                            </div>
+                            <div class="text-xs text-gray-400">Database</div>
+                        </div>
+                        
+                        <div class="server-item flex items-center justify-between p-2 rounded-md cursor-pointer" onclick="showDashboard()">
+                            <div class="flex items-center">
+                                <div class="status-dot status-offline mr-2"></div>
+                                <span>172.16.254.1</span>
+                            </div>
+                            <div class="text-xs text-gray-400">File Server</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Add Server Modal (initially hidden) -->
+        <div id="add-server-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="tech-card p-6 w-full max-w-md mx-4 modal modal-enter">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold">Add New Server</h3>
+                    <button onclick="hideAddServerModal()" class="text-gray-400 hover:text-white">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Server Name (Optional)</label>
+                        <input type="text" placeholder="Web Server" class="w-full bg-gray-800 border border-gray-700 rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Server IP Address</label>
+                        <input type="text" placeholder="192.168.1.100" class="w-full bg-gray-800 border border-gray-700 rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Username</label>
+                        <input type="text" placeholder="admin" class="w-full bg-gray-800 border border-gray-700 rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Password</label>
+                        <input type="password" placeholder="••••••••" class="w-full bg-gray-800 border border-gray-700 rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">SSH Port (Optional)</label>
+                        <input type="text" placeholder="22" class="w-full bg-gray-800 border border-gray-700 rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <div class="flex items-center pt-2">
+                        <input type="checkbox" id="save-credentials" class="rounded bg-gray-800 border-gray-700 text-blue-500 focus:ring-blue-500">
+                        <label for="save-credentials" class="ml-2 text-sm text-gray-300">Save credentials securely</label>
+                    </div>
+                    
+                    <div class="flex space-x-3 pt-2">
+                        <button onclick="hideAddServerModal()" class="flex-1 py-2 px-4 bg-gray-700 hover:bg-gray-600 rounded-lg text-white font-medium">
+                            Cancel
+                        </button>
+                        <button onclick="addNewServer()" class="flex-1 tech-button py-2 px-4 rounded-lg text-white font-medium">
+                            Add Server
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Server data for demo
+        const serverData = {
+            'Web Server': {
+                ip: '192.168.1.50',
+                status: 'online',
+                cpu: {
+                    percentage: '42%',
+                    info: '4 cores @ 2.4GHz',
+                    average: '38.5%',
+                    peak: '72.1%',
+                    model: 'Intel Xeon E5-2680 v4',
+                    cores: '4 (8 threads)',
+                    data: [28, 32, 35, 42, 38, 45, 52, 48, 42, 38, 35, 42, 45]
+                },
+                memory: {
+                    percentage: '68%',
+                    info: '5.4 GB / 8 GB',
+                    used: '5.4 GB',
+                    cached: '1.2 GB',
+                    free: '1.4 GB',
+                    total: '8 GB DDR4',
+                    data: [62, 64, 65, 68, 70, 72, 68, 65, 67, 68, 70, 68, 68]
+                },
+                disk: {
+                    percentage: '76%',
+                    info: '380 GB / 500 GB',
+                    read: '12.4 MB/s',
+                    write: '8.7 MB/s',
+                    type: '500 GB SSD',
+                    used: '380 GB (76%)',
+                    free: '120 GB (24%)',
+                    filesystem: 'ext4',
+                    readData: [5.2, 8.4, 12.4, 10.2, 7.8, 6.5, 8.2, 9.5, 11.2, 12.4, 10.8, 9.2, 8.5],
+                    writeData: [3.5, 4.2, 6.8, 8.7, 7.2, 5.4, 4.8, 6.2, 7.5, 8.7, 7.2, 5.8, 4.5]
+                },
+                network: {
+                    download: '2.4 MB/s',
+                    upload: '0.8 MB/s',
+                    total: '1.2 GB',
+                    downloadData: [1.8, 2.2, 1.9, 2.4, 2.1, 1.7, 1.5, 1.8, 2.0, 2.4, 2.2, 1.9, 2.4],
+                    uploadData: [0.5, 0.7, 0.8, 0.6, 0.5, 0.4, 0.6, 0.7, 0.8, 0.7, 0.6, 0.5, 0.8]
+                },
+                system: {
+                    hostname: 'web-server-01',
+                    os: 'Ubuntu 22.04 LTS',
+                    kernel: '5.15.0-58-generic',
+                    uptime: '43 days, 7 hours',
+                    loadAvg: '1.52, 1.24, 0.92'
+                }
+            },
+            'Database': {
+                ip: '10.0.0.15',
+                status: 'warning',
+                cpu: {
+                    percentage: '78%',
+                    info: '8 cores @ 3.2GHz',
+                    average: '65.2%',
+                    peak: '89.7%',
+                    model: 'AMD EPYC 7302P',
+                    cores: '8 (16 threads)',
+                    data: [58, 62, 68, 72, 78, 75, 70, 68, 72, 76, 78, 74, 72]
+                },
+                memory: {
+                    percentage: '85%',
+                    info: '13.6 GB / 16 GB',
+                    used: '13.6 GB',
+                    cached: '1.8 GB',
+                    free: '0.6 GB',
+                    total: '16 GB DDR4',
+                    data: [80, 82, 83, 84, 85, 86, 85, 84, 83, 84, 85, 85, 85]
+                },
+                disk: {
+                    percentage: '54%',
+                    info: '540 GB / 1 TB',
+                    read: '24.8 MB/s',
+                    write: '18.2 MB/s',
+                    type: '1 TB NVMe SSD',
+                    used: '540 GB (54%)',
+                    free: '460 GB (46%)',
+                    filesystem: 'xfs',
+                    readData: [18.5, 20.4, 22.8, 24.8, 23.2, 21.5, 20.8, 22.2, 23.5, 24.8, 22.2, 20.8, 19.5],
+                    writeData: [12.5, 14.2, 16.8, 18.2, 17.2, 15.4, 14.8, 16.2, 17.5, 18.2, 17.2, 15.8, 14.5]
+                },
+                network: {
+                    download: '5.8 MB/s',
+                    upload: '3.2 MB/s',
+                    total: '4.5 GB',
+                    downloadData: [4.8, 5.2, 5.5, 5.8, 5.6, 5.4, 5.2, 5.4, 5.6, 5.8, 5.7, 5.6, 5.8],
+                    uploadData: [2.5, 2.7, 2.9, 3.2, 3.0, 2.8, 2.6, 2.8, 3.0, 3.2, 3.1, 3.0, 3.2]
+                },
+                system: {
+                    hostname: 'db-server-01',
+                    os: 'CentOS 8.5',
+                    kernel: '4.18.0-348.el8.x86_64',
+                    uptime: '28 days, 14 hours',
+                    loadAvg: '3.24, 3.12, 2.98'
+                }
+            },
+            'File Server': {
+                ip: '172.16.254.1',
+                status: 'offline',
+                cpu: {
+                    percentage: '0%',
+                    info: '2 cores @ 1.8GHz',
+                    average: '0%',
+                    peak: '0%',
+                    model: 'Intel Celeron J4125',
+                    cores: '2 (4 threads)',
+                    data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+                },
+                memory: {
+                    percentage: '0%',
+                    info: '0 GB / 4 GB',
+                    used: '0 GB',
+                    cached: '0 GB',
+                    free: '0 GB',
+                    total: '4 GB DDR4',
+                    data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+                },
+                disk: {
+                    percentage: '0%',
+                    info: '0 GB / 2 TB',
+                    read: '0 MB/s',
+                    write: '0 MB/s',
+                    type: '2 TB HDD',
+                    used: '0 GB (0%)',
+                    free: '0 GB (0%)',
+                    filesystem: 'ext4',
+                    readData: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    writeData: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+                },
+                network: {
+                    download: '0 MB/s',
+                    upload: '0 MB/s',
+                    total: '0 GB',
+                    downloadData: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    uploadData: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+                },
+                system: {
+                    hostname: 'file-server-01',
+                    os: 'Debian 11',
+                    kernel: '5.10.0-11-amd64',
+                    uptime: 'Offline',
+                    loadAvg: 'N/A'
+                }
+            }
+        };
+        
+        // Chart objects
+        let cpuChart, memoryChart, diskChart, networkChart;
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            initCharts();
+            updateServerInfo('Web Server');
+        });
+        
+        // Navigation functions
+        function showDashboard() {
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('dashboard-screen').classList.remove('hidden');
+            initCharts();
+        }
+        
+        function showLoginScreen() {
+            document.getElementById('dashboard-screen').classList.add('hidden');
+            document.getElementById('login-screen').classList.remove('hidden');
+        }
+        
+        function showAddServerModal() {
+            document.getElementById('add-server-modal').classList.remove('hidden');
+            setTimeout(() => {
+                document.getElementById('add-server-modal').querySelector('.modal').classList.remove('modal-enter');
+            }, 10);
+        }
+        
+        function hideAddServerModal() {
+            const modal = document.getElementById('add-server-modal').querySelector('.modal');
+            modal.classList.add('modal-enter');
+            setTimeout(() => {
+                document.getElementById('add-server-modal').classList.add('hidden');
+            }, 300);
+        }
+        
+        function addNewServer() {
+            // In a real app, this would add the server to the list
+            hideAddServerModal();
+            
+            // For demo purposes, we'll just show a notification
+            const notification = document.createElement('div');
+            notification.className = 'fixed bottom-4 right-4 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg';
+            notification.innerHTML = '<div class="flex items-center"><i class="fas fa-check-circle mr-2"></i> Server added successfully!</div>';
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                notification.style.transition = 'opacity 0.5s ease';
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 500);
+            }, 3000);
+        }
+        
+        function selectServer(element, serverName, ip, status) {
+            // Remove active class from all server items
+            document.querySelectorAll('.server-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            // Add active class to clicked server item
+            element.classList.add('active');
+            
+            // Update server info
+            updateServerInfo(serverName);
+        }
+        
+        function updateServerInfo(serverName) {
+            const server = serverData[serverName];
+            if (!server) return;
+            
+            // Update header info
+            document.getElementById('server-name').textContent = serverName;
+            document.getElementById('server-ip').textContent = server.ip;
+            
+            const statusElement = document.getElementById('server-status');
+            statusElement.textContent = server.status.charAt(0).toUpperCase() + server.status.slice(1);
+            
+            // Update status class
+            statusElement.className = 'px-2 py-0.5 text-xs rounded-full';
+            if (server.status === 'online') {
+                statusElement.classList.add('bg-green-900', 'text-green-300');
+            } else if (server.status === 'warning') {
+                statusElement.classList.add('bg-yellow-900', 'text-yellow-300');
+            } else {
+                statusElement.classList.add('bg-red-900', 'text-red-300');
+            }
+            
+            // Update CPU info
+            document.getElementById('cpu-percentage').textContent = server.cpu.percentage;
+            document.getElementById('cpu-info').textContent = server.cpu.info;
+            document.getElementById('cpu-average').textContent = server.cpu.average;
+            document.getElementById('cpu-peak').textContent = server.cpu.peak;
+            document.getElementById('cpu-model').textContent = server.cpu.model;
+            document.getElementById('cpu-cores').textContent = server.cpu.cores;
+            
+            // Update CPU circle
+            const cpuCircle = document.getElementById('cpu-circle');
+            const cpuPercentage = parseInt(server.cpu.percentage);
+            cpuCircle.setAttribute('stroke-dasharray', `${cpuPercentage}, 100`);
+            
+            // Update Memory info
+            document.getElementById('memory-percentage').textContent = server.memory.percentage;
+            document.getElementById('memory-info').textContent = server.memory.info;
+            document.getElementById('memory-used').textContent = server.memory.used;
+            document.getElementById('memory-cached').textContent = server.memory.cached;
+            document.getElementById('memory-free').textContent = server.memory.free;
+            document.getElementById('memory-total').textContent = server.memory.total;
+            
+            // Update Memory circle
+            const memoryCircle = document.getElementById('memory-circle');
+            const memoryPercentage = parseInt(server.memory.percentage);
+            memoryCircle.setAttribute('stroke-dasharray', `${memoryPercentage}, 100`);
+            
+            // Update Disk info
+            document.getElementById('disk-percentage').textContent = server.disk.percentage;
+            document.getElementById('disk-info').textContent = server.disk.info;
+            document.getElementById('disk-read').textContent = server.disk.read;
+            document.getElementById('disk-write').textContent = server.disk.write;
+            document.getElementById('disk-type').textContent = server.disk.type;
+            document.getElementById('disk-used').textContent = server.disk.used;
+            document.getElementById('disk-free').textContent = server.disk.free;
+            document.getElementById('file-system').textContent = server.disk.filesystem;
+            
+            // Update Disk circle
+            const diskCircle = document.getElementById('disk-circle');
+            const diskPercentage = parseInt(server.disk.percentage);
+            diskCircle.setAttribute('stroke-dasharray', `${diskPercentage}, 100`);
+            
+            // Update Network info
+            document.getElementById('network-download').textContent = server.network.download;
+            document.getElementById('network-upload').textContent = server.network.upload;
+            document.getElementById('network-download-total').textContent = server.network.download;
+            document.getElementById('network-upload-total').textContent = server.network.upload;
+            document.getElementById('network-total').textContent = server.network.total;
+            
+            // Update System info
+            document.getElementById('hostname').textContent = server.system.hostname;
+            document.getElementById('os-name').textContent = server.system.os;
+            document.getElementById('kernel-version').textContent = server.system.kernel;
+            document.getElementById('uptime').textContent = server.system.uptime;
+            document.getElementById('load-avg').textContent = server.system.loadAvg;
+            
+            // Update charts
+            updateCharts(server);
+        }
+        
+        // Initialize charts
+        function initCharts() {
+            // Generate time labels for the last hour (every 5 minutes)
+            const timeLabels = [];
+            const now = new Date();
+            for (let i = 12; i >= 0; i--) {
+                const time = new Date(now.getTime() - i * 5 * 60000);
+                timeLabels.push(time.getHours() + ':' + (time.getMinutes() < 10 ? '0' : '') + time.getMinutes());
+            }
+            
+            // Common chart options
+            const commonOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: {
+                    duration: 1000,
+                    easing: 'easeOutQuart'
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.05)'
+                        },
+                        ticks: {
+                            color: '#94a3b8'
+                        }
+                    },
+                    y: {
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.05)'
+                        },
+                        ticks: {
+                            color: '#94a3b8'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: '#f1f5f9'
+                        }
+                    }
+                }
+            };
+            
+            // CPU Chart
+            const cpuCtx = document.getElementById('cpuChart').getContext('2d');
+            cpuChart = new Chart(cpuCtx, {
+                type: 'line',
+                data: {
+                    labels: timeLabels,
+                    datasets: [{
+                        label: 'CPU Usage (%)',
+                        data: serverData['Web Server'].cpu.data,
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: commonOptions
+            });
+            
+            // Memory Chart
+            const memoryCtx = document.getElementById('memoryChart').getContext('2d');
+            memoryChart = new Chart(memoryCtx, {
+                type: 'line',
+                data: {
+                    labels: timeLabels,
+                    datasets: [{
+                        label: 'Memory Usage (%)',
+                        data: serverData['Web Server'].memory.data,
+                        borderColor: '#8b5cf6',
+                        backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: commonOptions
+            });
+            
+            // Disk Chart
+            const diskCtx = document.getElementById('diskChart').getContext('2d');
+            diskChart = new Chart(diskCtx, {
+                type: 'line',
+                data: {
+                    labels: timeLabels,
+                    datasets: [{
+                        label: 'Read (MB/s)',
+                        data: serverData['Web Server'].disk.readData,
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.4
+                    }, {
+                        label: 'Write (MB/s)',
+                        data: serverData['Web Server'].disk.writeData,
+                        borderColor: '#f59e0b',
+                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.4
+                    }]
+                },
+                options: commonOptions
+            });
+            
+            // Network Chart
+            const networkCtx = document.getElementById('networkChart').getContext('2d');
+            networkChart = new Chart(networkCtx, {
+                type: 'line',
+                data: {
+                    labels: timeLabels,
+                    datasets: [{
+                        label: 'Download (MB/s)',
+                        data: serverData['Web Server'].network.downloadData,
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.4
+                    }, {
+                        label: 'Upload (MB/s)',
+                        data: serverData['Web Server'].network.uploadData,
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.4
+                    }]
+                },
+                options: commonOptions
+            });
+        }
+        
+        // Update charts with server data
+        function updateCharts(server) {
+            if (!cpuChart || !memoryChart || !diskChart || !networkChart) return;
+            
+            // Update CPU chart
+            cpuChart.data.datasets[0].data = server.cpu.data;
+            cpuChart.update();
+            
+            // Update Memory chart
+            memoryChart.data.datasets[0].data = server.memory.data;
+            memoryChart.update();
+            
+            // Update Disk chart
+            diskChart.data.datasets[0].data = server.disk.readData;
+            diskChart.data.datasets[1].data = server.disk.writeData;
+            diskChart.update();
+            
+            // Update Network chart
+            networkChart.data.datasets[0].data = server.network.downloadData;
+            networkChart.data.datasets[1].data = server.network.uploadData;
+            networkChart.update();
+        }
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'965a596bb57e4aa4',t:'MTc1MzYwMDU2NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
