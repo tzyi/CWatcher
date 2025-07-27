@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CWatcher - 伺服器監控儀表板</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #0c0c0c 0%, #1a1a1a 100%);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .neon-border {
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+            border: 1px solid rgba(0, 255, 255, 0.5);
+        }
+        .tech-gradient {
+            background: linear-gradient(45deg, #00ffff, #0080ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .metric-card {
+            transition: all 0.3s ease;
+        }
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 255, 255, 0.15);
+        }
+        .progress-bar {
+            background: linear-gradient(90deg, #00ffff, #0080ff);
+            height: 6px;
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+        .status-online { color: #10b981; }
+        .status-warning { color: #f59e0b; }
+        .status-critical { color: #ef4444; }
+        .pulse-dot {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body class="min-h-screen text-white">
+    <!-- Navigation Header -->
+    <nav class="glass-effect border-b border-gray-700 p-4">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <button onclick="goBack()" class="text-gray-400 hover:text-white mr-4">
+                    <i class="fas fa-arrow-left text-xl"></i>
+                </button>
+                <i class="fas fa-desktop text-2xl tech-gradient"></i>
+                <h1 class="text-2xl font-bold tech-gradient">CWatcher</h1>
+                <span class="text-gray-400">|</span>
+                <span class="text-lg" id="serverName">Web Server 01</span>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div class="flex items-center space-x-2">
+                    <div class="w-2 h-2 bg-green-400 rounded-full pulse-dot"></div>
+                    <span class="text-sm text-green-400">線上</span>
+                </div>
+                <button class="glass-effect px-4 py-2 rounded-lg hover:neon-border transition-all duration-300">
+                    <i class="fas fa-sync-alt mr-2"></i>重新整理
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Dashboard -->
+    <div class="max-w-7xl mx-auto p-6">
+        <!-- Server Info Header -->
+        <div class="glass-effect rounded-xl p-6 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="text-center">
+                    <div class="text-2xl font-bold tech-gradient" id="serverIP">192.168.1.100</div>
+                    <div class="text-gray-400 text-sm">IP 地址</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-green-400">15天 8小時</div>
+                    <div class="text-gray-400 text-sm">正常運行時間</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-cyan-400">Ubuntu 22.04</div>
+                    <div class="text-gray-400 text-sm">作業系統</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-blue-400">2分鐘前</div>
+                    <div class="text-gray-400 text-sm">最後更新</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Key Metrics Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+            <!-- CPU Card -->
+            <div class="metric-card glass-effect rounded-xl p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center space-x-3">
+                        <i class="fas fa-microchip text-2xl text-cyan-400"></i>
+                        <h3 class="text-lg font-semibold">CPU 使用率</h3>
+                    </div>
+                    <span class="text-2xl font-bold status-online">25%</span>
+                </div>
+                <div class="w-full bg-gray-700 rounded-full h-2 mb-2">
+                    <div class="progress-bar rounded-full" style="width: 25%"></div>
+                </div>
+                <div class="text-sm text-gray-400">4核心 @ 2.4GHz</div>
+            </div>
+
+            <!-- Memory Card -->
+            <div class="metric-card glass-effect rounded-xl p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center space-x-3">
+                        <i class="fas fa-memory text-2xl text-yellow-400"></i>
+                        <h3 class="text-lg font-semibold">記憶體</h3>
+                    </div>
+                    <span class="text-2xl font-bold status-warning">68%</span>
+                </div>
+                <div class="w-full bg-gray-700 rounded-full h-2 mb-2">
+                    <div class="progress-bar rounded-full" style="width: 68%"></div>
+                </div>
+                <div class="text-sm text-gray-400">5.4GB / 8GB</div>
+            </div>
+
+            <!-- Disk Card -->
+            <div class="metric-card glass-effect rounded-xl p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center space-x-3">
+                        <i class="fas fa-hdd text-2xl text-green-400"></i>
+                        <h3 class="text-lg font-semibold">磁碟空間</h3>
+                    </div>
+                    <span class="text-2xl font-bold status-online">42%</span>
+                </div>
+                <div class="w-full bg-gray-700 rounded-full h-2 mb-2">
+                    <div class="progress-bar rounded-full" style="width: 42%"></div>
+                </div>
+                <div class="text-sm text-gray-400">84GB / 200GB</div>
+            </div>
+
+            <!-- Network Card -->
+            <div class="metric-card glass-effect rounded-xl p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center space-x-3">
+                        <i class="fas fa-network-wired text-2xl text-purple-400"></i>
+                        <h3 class="text-lg font-semibold">網路流量</h3>
+                    </div>
+                    <span class="text-2xl font-bold status-online">1.2MB/s</span>
+                </div>
+                <div class="flex justify-between text-sm text-gray-400">
+                    <span>↑ 0.8MB/s</span>
+                    <span>↓ 0.4MB/s</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <!-- CPU Usage Chart -->
+            <div class="glass-effect rounded-xl p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold">CPU 使用率趨勢</h3>
+                    <select class="bg-gray-800 border border-gray-600 rounded px-3 py-1 text-sm">
+                        <option>最近1小時</option>
+                        <option>最近6小時</option>
+                        <option>最近24小時</option>
+                    </select>
+                </div>
+                <canvas id="cpuChart" height="200"></canvas>
+            </div>
+
+            <!-- Memory Usage Chart -->
+            <div class="glass-effect rounded-xl p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold">記憶體使用率趨勢</h3>
+                    <select class="bg-gray-800 border border-gray-600 rounded px-3 py-1 text-sm">
+                        <option>最近1小時</option>
+                        <option>最近6小時</option>
+                        <option>最近24小時</option>
+                    </select>
+                </div>
+                <canvas id="memoryChart" height="200"></canvas>
+            </div>
+        </div>
+
+        <!-- Network and Disk Charts -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <!-- Network Traffic Chart -->
+            <div class="glass-effect rounded-xl p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold">網路流量</h3>
+                    <select class="bg-gray-800 border border-gray-600 rounded px-3 py-1 text-sm">
+                        <option>最近1小時</option>
+                        <option>最近6小時</option>
+                        <option>最近24小時</option>
+                    </select>
+                </div>
+                <canvas id="networkChart" height="200"></canvas>
+            </div>
+
+            <!-- Disk I/O Chart -->
+            <div class="glass-effect rounded-xl p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold">磁碟 I/O</h3>
+                    <select class="bg-gray-800 border border-gray-600 rounded px-3 py-1 text-sm">
+                        <option>最近1小時</option>
+                        <option>最近6小時</option>
+                        <option>最近24小時</option>
+                    </select>
+                </div>
+                <canvas id="diskChart" height="200"></canvas>
+            </div>
+        </div>
+
+        <!-- Process List -->
+        <div class="glass-effect rounded-xl p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold">系統程序</h3>
+                <button class="glass-effect px-4 py-2 rounded-lg hover:neon-border transition-all duration-300">
+                    <i class="fas fa-sync-alt mr-2"></i>重新整理
+                </button>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b border-gray-700">
+                            <th class="text-left py-3 px-4">程序名稱</th>
+                            <th class="text-left py-3 px-4">PID</th>
+                            <th class="text-left py-3 px-4">CPU %</th>
+                            <th class="text-left py-3 px-4">記憶體 %</th>
+                            <th class="text-left py-3 px-4">狀態</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="border-b border-gray-800 hover:bg-gray-800">
+                            <td class="py-3 px-4">nginx</td>
+                            <td class="py-3 px-4">1234</td>
+                            <td class="py-3 px-4 text-green-400">2.1%</td>
+                            <td class="py-3 px-4 text-green-400">1.5%</td>
+                            <td class="py-3 px-4"><span class="bg-green-500 text-black px-2 py-1 rounded text-xs">運行中</span></td>
+                        </tr>
+                        <tr class="border-b border-gray-800 hover:bg-gray-800">
+                            <td class="py-3 px-4">mysql</td>
+                            <td class="py-3 px-4">5678</td>
+                            <td class="py-3 px-4 text-yellow-400">15.3%</td>
+                            <td class="py-3 px-4 text-yellow-400">25.8%</td>
+                            <td class="py-3 px-4"><span class="bg-green-500 text-black px-2 py-1 rounded text-xs">運行中</span></td>
+                        </tr>
+                        <tr class="border-b border-gray-800 hover:bg-gray-800">
+                            <td class="py-3 px-4">apache2</td>
+                            <td class="py-3 px-4">9012</td>
+                            <td class="py-3 px-4 text-green-400">3.7%</td>
+                            <td class="py-3 px-4 text-green-400">4.2%</td>
+                            <td class="py-3 px-4"><span class="bg-green-500 text-black px-2 py-1 rounded text-xs">運行中</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function goBack() {
+            window.location.href = 'index.html';
+        }
+
+        // 初始化圖表
+        function initCharts() {
+            const chartOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: '#9ca3af'
+                        }
+                    },
+                    y: {
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: '#9ca3af'
+                        }
+                    }
+                }
+            };
+
+            // CPU Chart
+            const cpuCtx = document.getElementById('cpuChart').getContext('2d');
+            new Chart(cpuCtx, {
+                type: 'line',
+                data: {
+                    labels: ['10:00', '10:10', '10:20', '10:30', '10:40', '10:50', '11:00'],
+                    datasets: [{
+                        data: [20, 25, 30, 22, 28, 25, 25],
+                        borderColor: '#00ffff',
+                        backgroundColor: 'rgba(0, 255, 255, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: chartOptions
+            });
+
+            // Memory Chart
+            const memoryCtx = document.getElementById('memoryChart').getContext('2d');
+            new Chart(memoryCtx, {
+                type: 'line',
+                data: {
+                    labels: ['10:00', '10:10', '10:20', '10:30', '10:40', '10:50', '11:00'],
+                    datasets: [{
+                        data: [60, 65, 70, 68, 72, 68, 68],
+                        borderColor: '#fbbf24',
+                        backgroundColor: 'rgba(251, 191, 36, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: chartOptions
+            });
+
+            // Network Chart
+            const networkCtx = document.getElementById('networkChart').getContext('2d');
+            new Chart(networkCtx, {
+                type: 'line',
+                data: {
+                    labels: ['10:00', '10:10', '10:20', '10:30', '10:40', '10:50', '11:00'],
+                    datasets: [{
+                        label: '上傳',
+                        data: [0.5, 0.8, 1.2, 0.9, 1.1, 0.8, 0.8],
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        fill: false,
+                        tension: 0.4
+                    }, {
+                        label: '下載',
+                        data: [0.3, 0.4, 0.6, 0.5, 0.7, 0.4, 0.4],
+                        borderColor: '#8b5cf6',
+                        backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                        fill: false,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    ...chartOptions,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            labels: {
+                                color: '#9ca3af'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Disk I/O Chart
+            const diskCtx = document.getElementById('diskChart').getContext('2d');
+            new Chart(diskCtx, {
+                type: 'line',
+                data: {
+                    labels: ['10:00', '10:10', '10:20', '10:30', '10:40', '10:50', '11:00'],
+                    datasets: [{
+                        label: '讀取',
+                        data: [10, 15, 20, 18, 22, 15, 15],
+                        borderColor: '#06b6d4',
+                        backgroundColor: 'rgba(6, 182, 212, 0.1)',
+                        fill: false,
+                        tension: 0.4
+                    }, {
+                        label: '寫入',
+                        data: [5, 8, 12, 10, 14, 8, 8],
+                        borderColor: '#f59e0b',
+                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                        fill: false,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    ...chartOptions,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            labels: {
+                                color: '#9ca3af'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 頁面載入時初始化圖表
+        document.addEventListener('DOMContentLoaded', function() {
+            initCharts();
+            
+            // 從URL參數獲取伺服器資訊
+            const urlParams = new URLSearchParams(window.location.search);
+            const serverIP = urlParams.get('server');
+            if (serverIP) {
+                document.getElementById('serverIP').textContent = serverIP;
+            }
+        });
+    </script>
+</body>
+</html>

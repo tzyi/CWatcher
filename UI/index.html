@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CWatcher - 系統監控平台</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #0c0c0c 0%, #1a1a1a 100%);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .neon-border {
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+            border: 1px solid rgba(0, 255, 255, 0.5);
+        }
+        .tech-gradient {
+            background: linear-gradient(45deg, #00ffff, #0080ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .server-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 255, 255, 0.2);
+        }
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body class="min-h-screen text-white">
+    <!-- Navigation Header -->
+    <nav class="glass-effect border-b border-gray-700 p-4">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <i class="fas fa-desktop text-2xl tech-gradient"></i>
+                <h1 class="text-2xl font-bold tech-gradient">CWatcher</h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button class="glass-effect px-4 py-2 rounded-lg hover:neon-border transition-all duration-300">
+                    <i class="fas fa-cog mr-2"></i>設定
+                </button>
+                <button class="glass-effect px-4 py-2 rounded-lg hover:neon-border transition-all duration-300">
+                    <i class="fas fa-user mr-2"></i>帳戶
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto p-6">
+        <!-- Header Section -->
+        <div class="mb-8">
+            <h2 class="text-3xl font-bold mb-2">伺服器監控中心</h2>
+            <p class="text-gray-400">管理和監控您的Linux伺服器</p>
+        </div>
+
+        <!-- Add Server Button -->
+        <div class="mb-6">
+            <button onclick="showAddServerModal()" class="neon-border bg-gradient-to-r from-cyan-500 to-blue-500 px-6 py-3 rounded-lg font-semibold hover:from-cyan-400 hover:to-blue-400 transition-all duration-300 transform hover:scale-105">
+                <i class="fas fa-plus mr-2"></i>新增伺服器
+            </button>
+        </div>
+
+        <!-- Server Cards Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="serverGrid">
+            <!-- Example Server Card -->
+            <div class="server-card glass-effect rounded-xl p-6 transition-all duration-300 cursor-pointer" onclick="openServerDashboard('192.168.1.100')">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-3 h-3 bg-green-400 rounded-full pulse-animation"></div>
+                        <h3 class="text-lg font-semibold">Web Server 01</h3>
+                    </div>
+                    <i class="fas fa-server text-cyan-400"></i>
+                </div>
+                <div class="space-y-2 text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">IP:</span>
+                        <span>192.168.1.100</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">CPU:</span>
+                        <span class="text-green-400">25%</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">Memory:</span>
+                        <span class="text-yellow-400">68%</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">狀態:</span>
+                        <span class="text-green-400">線上</span>
+                    </div>
+                </div>
+                <div class="mt-4 pt-4 border-t border-gray-700">
+                    <div class="flex justify-between text-xs text-gray-400">
+                        <span>最後更新: 2分鐘前</span>
+                        <span>正常運行: 15天</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Another Example Server Card -->
+            <div class="server-card glass-effect rounded-xl p-6 transition-all duration-300 cursor-pointer" onclick="openServerDashboard('192.168.1.101')">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-3 h-3 bg-red-400 rounded-full pulse-animation"></div>
+                        <h3 class="text-lg font-semibold">Database Server</h3>
+                    </div>
+                    <i class="fas fa-database text-cyan-400"></i>
+                </div>
+                <div class="space-y-2 text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">IP:</span>
+                        <span>192.168.1.101</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">CPU:</span>
+                        <span class="text-red-400">85%</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">Memory:</span>
+                        <span class="text-red-400">92%</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">狀態:</span>
+                        <span class="text-red-400">警告</span>
+                    </div>
+                </div>
+                <div class="mt-4 pt-4 border-t border-gray-700">
+                    <div class="flex justify-between text-xs text-gray-400">
+                        <span>最後更新: 1分鐘前</span>
+                        <span>正常運行: 8天</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Server Modal -->
+    <div id="addServerModal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="glass-effect rounded-xl p-8 w-full max-w-md">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-xl font-bold tech-gradient">新增伺服器</h3>
+                    <button onclick="hideAddServerModal()" class="text-gray-400 hover:text-white">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <form id="addServerForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">伺服器名稱</label>
+                        <input type="text" class="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-2 focus:border-cyan-400 focus:outline-none" placeholder="例：Web Server 01">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium mb-2">IP 地址</label>
+                        <input type="text" class="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-2 focus:border-cyan-400 focus:outline-none" placeholder="192.168.1.100">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium mb-2">SSH 端口</label>
+                        <input type="number" class="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-2 focus:border-cyan-400 focus:outline-none" placeholder="22" value="22">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium mb-2">用戶名</label>
+                        <input type="text" class="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-2 focus:border-cyan-400 focus:outline-none" placeholder="root">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium mb-2">密碼</label>
+                        <input type="password" class="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-2 focus:border-cyan-400 focus:outline-none" placeholder="••••••••">
+                    </div>
+                    
+                    <div class="flex space-x-3 pt-4">
+                        <button type="button" onclick="testConnection()" class="flex-1 glass-effect border border-cyan-400 text-cyan-400 py-2 rounded-lg hover:bg-cyan-400 hover:text-black transition-all duration-300">
+                            <i class="fas fa-plug mr-2"></i>測試連接
+                        </button>
+                        <button type="submit" class="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 py-2 rounded-lg hover:from-cyan-400 hover:to-blue-400 transition-all duration-300">
+                            <i class="fas fa-plus mr-2"></i>新增
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showAddServerModal() {
+            document.getElementById('addServerModal').classList.remove('hidden');
+        }
+
+        function hideAddServerModal() {
+            document.getElementById('addServerModal').classList.add('hidden');
+        }
+
+        function testConnection() {
+            // 模擬測試連接
+            alert('正在測試連接...');
+        }
+
+        function openServerDashboard(ip) {
+            window.location.href = `dashboard.html?server=${ip}`;
+        }
+
+        // 關閉模態框當點擊外部區域
+        document.getElementById('addServerModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                hideAddServerModal();
+            }
+        });
+    </script>
+</body>
+</html>
