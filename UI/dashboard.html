@@ -175,7 +175,9 @@
                         <option>最近24小時</option>
                     </select>
                 </div>
-                <canvas id="cpuChart" height="200"></canvas>
+                <div style="height: 300px; width: 100%;">
+                    <canvas id="cpuChart" width="550" height="300"></canvas>
+                </div>
             </div>
 
             <!-- Memory Usage Chart -->
@@ -188,7 +190,9 @@
                         <option>最近24小時</option>
                     </select>
                 </div>
-                <canvas id="memoryChart" height="200"></canvas>
+                <div style="height: 300px; width: 100%;">
+                    <canvas id="memoryChart" width="550" height="300"></canvas>
+                </div>
             </div>
         </div>
 
@@ -204,7 +208,9 @@
                         <option>最近24小時</option>
                     </select>
                 </div>
-                <canvas id="networkChart" height="200"></canvas>
+                <div style="height: 300px; width: 100%;">
+                    <canvas id="networkChart" width="550" height="300"></canvas>
+                </div>
             </div>
 
             <!-- Disk I/O Chart -->
@@ -217,7 +223,9 @@
                         <option>最近24小時</option>
                     </select>
                 </div>
-                <canvas id="diskChart" height="200"></canvas>
+                <div style="height: 300px; width: 100%;">
+                    <canvas id="diskChart" width="550" height="300"></canvas>
+                </div>
             </div>
         </div>
 
@@ -276,7 +284,7 @@
         // 初始化圖表
         function initCharts() {
             const chartOptions = {
-                responsive: true,
+                responsive: false,
                 maintainAspectRatio: false,
                 plugins: {
                     legend: {
