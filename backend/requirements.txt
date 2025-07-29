@@ -1,0 +1,53 @@
+# FastAPI 與相關套件
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+python-multipart==0.0.6
+
+# 資料庫相關
+sqlalchemy==2.0.23
+alembic==1.12.1
+aiomysql==0.2.0
+PyMySQL==1.1.0
+
+# SSH 連接與系統監控
+paramiko==3.3.1
+psutil==5.9.6
+
+# 安全性
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+cryptography==41.0.7
+
+# WebSocket 與即時通訊
+websockets==12.0
+
+# 任務排程
+APScheduler==3.10.4
+
+# 配置管理
+python-decouple==3.8
+pydantic==2.5.0
+pydantic-settings==2.0.3
+
+# 測試相關
+pytest==7.4.3
+pytest-asyncio==0.21.1
+pytest-cov==4.1.0
+httpx==0.25.2
+
+# 程式碼品質
+black==23.11.0
+flake8==6.1.0
+mypy==1.7.1
+bandit==1.7.5
+
+# 開發工具
+python-dotenv==1.0.0
+rich==13.7.0
+
+# 日誌
+loguru==0.7.2
+
+# HTTP 客戶端
+httpx==0.25.2
+requests==2.31.0

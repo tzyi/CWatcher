@@ -1,0 +1,114 @@
+# CWatcher Docker Compose 配置
+# 用於開發和生產環境的完整部署
+
+version: '3.8'
+
+services:
+  # PostgreSQL 資料庫
+  database:
+    image: postgres:15-alpine
+    container_name: cwatcher-database
+    environment:
+      POSTGRES_DB: cwatcher
+      POSTGRES_USER: cwatcher
+      POSTGRES_PASSWORD: cwatcher_password
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "5432:5432"
+    networks:
+      - cwatcher-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cwatcher -d cwatcher"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis (可選，用於快取)
+  redis:
+    image: redis:7-alpine
+    container_name: cwatcher-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - cwatcher-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # CWatcher 後端 API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cwatcher-backend
+    environment:
+      - ENVIRONMENT=production
+      - DATABASE_URL=postgresql+asyncpg://cwatcher:cwatcher_password@database:5432/cwatcher
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=your-production-secret-key-change-this
+      - BACKEND_CORS_ORIGINS=http://localhost:3000,http://localhost:80
+    volumes:
+      - ./backend/logs:/app/logs
+      - backend_uploads:/app/uploads
+    ports:
+      - "8000:8000"
+    networks:
+      - cwatcher-network
+    depends_on:
+      database:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # CWatcher 前端
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: cwatcher-frontend
+    environment:
+      - API_BASE_URL=http://backend:8000
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - cwatcher-network
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  backend_uploads:
+    driver: local
+
+networks:
+  cwatcher-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

@@ -1,0 +1,172 @@
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+/* 全域樣式 */
+@layer base {
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
+    scroll-behavior: smooth;
+  }
+  
+  body {
+    background-color: theme('colors.dark.darker');
+    color: theme('colors.text.primary');
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  
+  /* 自訂滾動條 */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: theme('colors.dark.darker');
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: theme('colors.primary.600');
+    border-radius: 3px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: theme('colors.primary.500');
+  }
+  
+  /* Firefox 滾動條 */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: theme('colors.primary.600') theme('colors.dark.darker');
+  }
+}
+
+/* 元件樣式 */
+@layer components {
+  /* 技術風格按鈕 */
+  .tech-button {
+    @apply bg-tech-gradient text-white font-medium py-2 px-4 rounded-lg transition-all duration-300 ease-in-out;
+    @apply hover:shadow-glow hover:-translate-y-0.5 active:translate-y-0;
+  }
+  
+  /* 技術風格卡片 */
+  .tech-card {
+    @apply bg-dark-card border border-white/10 rounded-lg shadow-card backdrop-blur-sm;
+    @apply hover:shadow-card-hover hover:-translate-y-1 transition-all duration-300;
+  }
+  
+  /* 指標卡片 */
+  .metric-card {
+    @apply bg-dark-card/70 border border-white/5 rounded-lg p-4;
+    @apply hover:-translate-y-1 hover:shadow-card-hover transition-all duration-300;
+  }
+  
+  /* 伺服器項目 */
+  .server-item {
+    @apply border-l-3 border-transparent transition-all duration-200 ease-in-out;
+    @apply hover:border-primary-500 hover:bg-primary-500/10;
+  }
+  
+  .server-item.active {
+    @apply border-primary-500 bg-primary-500/10;
+  }
+  
+  /* 狀態點 */
+  .status-dot {
+    @apply h-2 w-2 rounded-full;
+  }
+  
+  .status-online {
+    @apply bg-status-online shadow-[0_0_5px_theme('colors.status.online')];
+  }
+  
+  .status-warning {
+    @apply bg-status-warning shadow-[0_0_5px_theme('colors.status.warning')];
+  }
+  
+  .status-offline {
+    @apply bg-status-offline shadow-[0_0_5px_theme('colors.status.offline')];
+  }
+  
+  .status-unknown {
+    @apply bg-status-unknown shadow-[0_0_5px_theme('colors.status.unknown')];
+  }
+  
+  /* 載入條 */
+  .loading-bar {
+    @apply h-1 bg-loading-gradient bg-[length:200%_100%] animate-loading;
+  }
+  
+  /* 脈衝動畫 */
+  .pulse-glow {
+    @apply animate-pulse-slow;
+  }
+  
+  /* 圖表容器 */
+  .chart-container {
+    @apply relative w-full;
+    height: 300px;
+  }
+  
+  /* 模態視窗 */
+  .modal-overlay {
+    @apply fixed inset-0 bg-black/50 backdrop-blur-sm z-50;
+    @apply flex items-center justify-center p-4;
+  }
+  
+  .modal-content {
+    @apply bg-dark-card border border-dark-border rounded-lg shadow-2xl;
+    @apply max-w-md w-full max-h-[90vh] overflow-y-auto;
+    @apply animate-slide-up;
+  }
+  
+  /* 表單樣式 */
+  .form-input {
+    @apply w-full bg-dark-surface border border-dark-border rounded-lg py-2 px-3;
+    @apply text-text-primary placeholder-text-secondary;
+    @apply focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500;
+    @apply transition-colors duration-200;
+  }
+  
+  .form-label {
+    @apply block text-sm font-medium text-text-secondary mb-1;
+  }
+  
+  /* 漸層文字 */
+  .gradient-text {
+    @apply bg-gradient-to-r from-primary-400 to-secondary-400 bg-clip-text text-transparent;
+  }
+  
+  /* 玻璃效果 */
+  .glass-effect {
+    @apply bg-white/5 backdrop-blur-md border border-white/10;
+  }
+}
+
+/* 工具類別 */
+@layer utilities {
+  /* 文字省略 */
+  .text-ellipsis-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  
+  .text-ellipsis-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  
+  /* 安全區域 */
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}

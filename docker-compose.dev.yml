@@ -1,0 +1,112 @@
+# CWatcher 開發環境 Docker Compose 配置
+# 用於本地開發，支援熱重載和除錯
+
+version: '3.8'
+
+services:
+  # PostgreSQL 資料庫 - 開發配置
+  database:
+    image: postgres:15-alpine
+    container_name: cwatcher-database-dev
+    environment:
+      POSTGRES_DB: cwatcher_dev
+      POSTGRES_USER: cwatcher
+      POSTGRES_PASSWORD: cwatcher_dev
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+      - ./docker/postgres/init-dev.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "5433:5432"  # 使用不同埠避免衝突
+    networks:
+      - cwatcher-dev-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cwatcher -d cwatcher_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Redis - 開發配置
+  redis:
+    image: redis:7-alpine
+    container_name: cwatcher-redis-dev
+    ports:
+      - "6380:6379"  # 使用不同埠
+    volumes:
+      - redis_dev_data:/data
+    networks:
+      - cwatcher-dev-network
+    restart: unless-stopped
+
+  # 開發用的後端 (可選，也可以在本地直接執行)
+  backend-dev:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: builder  # 只建構到 builder 階段用於開發
+    container_name: cwatcher-backend-dev
+    environment:
+      - ENVIRONMENT=development
+      - DEBUG=true
+      - DATABASE_URL=postgresql+asyncpg://cwatcher:cwatcher_dev@database:5432/cwatcher_dev
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=dev-secret-key-not-for-production
+    volumes:
+      - ./backend:/app:cached  # 掛載原始碼支援熱重載
+      - backend_dev_logs:/app/logs
+    ports:
+      - "8001:8000"  # 使用不同埠
+    networks:
+      - cwatcher-dev-network
+    depends_on:
+      database:
+        condition: service_healthy
+    restart: unless-stopped
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+
+  # pgAdmin 管理介面 (開發用)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: cwatcher-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@cwatcher.local
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    ports:
+      - "5050:80"
+    networks:
+      - cwatcher-dev-network
+    depends_on:
+      - database
+    restart: unless-stopped
+
+  # Mailhog (開發用郵件伺服器)
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: cwatcher-mailhog
+    ports:
+      - "8025:8025"  # Web UI
+      - "1025:1025"  # SMTP
+    networks:
+      - cwatcher-dev-network
+    restart: unless-stopped
+
+volumes:
+  postgres_dev_data:
+    driver: local
+  redis_dev_data:
+    driver: local
+  backend_dev_logs:
+    driver: local
+  pgadmin_data:
+    driver: local
+
+networks:
+  cwatcher-dev-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16
