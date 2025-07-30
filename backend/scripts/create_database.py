@@ -7,7 +7,7 @@
 
 import pymysql
 import sys
-from app.core.config import settings
+from core.config import settings
 
 
 def create_database():

@@ -15,9 +15,9 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 
-from app.services.command_executor import CommandExecutor, CommandResult, ExecutionStatus
-from app.services.ssh_manager import SSHConnectionConfig, ssh_manager
-from app.core.config import settings
+from services.command_executor import CommandExecutor, CommandResult, ExecutionStatus
+from services.ssh_manager import SSHConnectionConfig, ssh_manager
+from core.config import settings
 
 
 # 設定日誌
@@ -786,7 +786,7 @@ class SystemInfoCollector:
 
 
 # 全域系統資訊收集器實例
-from app.services.command_executor import command_executor
+from services.command_executor import command_executor
 system_collector = SystemInfoCollector(command_executor)
 
 

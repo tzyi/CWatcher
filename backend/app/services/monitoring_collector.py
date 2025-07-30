@@ -14,9 +14,9 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
 
-from app.services.command_executor import CommandExecutor, CommandResult, ExecutionStatus
-from app.services.ssh_manager import SSHConnectionConfig, ssh_manager
-from app.core.config import settings
+from services.command_executor import CommandExecutor, CommandResult, ExecutionStatus
+from services.ssh_manager import SSHConnectionConfig, ssh_manager
+from core.config import settings
 
 # 設定日誌
 logger = logging.getLogger(__name__)
@@ -1141,28 +1141,28 @@ default_thresholds = MonitoringThresholds()
 # 便利函數
 async def collect_cpu_monitoring_data(config: SSHConnectionConfig, server_id: Optional[int] = None) -> MonitoringData:
     """收集 CPU 監控數據的便利函數"""
-    from app.services.command_executor import command_executor
+    from services.command_executor import command_executor
     monitor = CPUMonitor(command_executor, default_thresholds)
     return await monitor.collect_cpu_metrics(config, server_id)
 
 
 async def collect_memory_monitoring_data(config: SSHConnectionConfig, server_id: Optional[int] = None) -> MonitoringData:
     """收集記憶體監控數據的便利函數"""
-    from app.services.command_executor import command_executor
+    from services.command_executor import command_executor
     monitor = MemoryMonitor(command_executor, default_thresholds)
     return await monitor.collect_memory_metrics(config, server_id)
 
 
 async def collect_disk_monitoring_data(config: SSHConnectionConfig, server_id: Optional[int] = None) -> MonitoringData:
     """收集磁碟監控數據的便利函數"""
-    from app.services.command_executor import command_executor
+    from services.command_executor import command_executor
     monitor = DiskMonitor(command_executor, default_thresholds)
     return await monitor.collect_disk_metrics(config, server_id)
 
 
 async def collect_network_monitoring_data(config: SSHConnectionConfig, server_id: Optional[int] = None) -> MonitoringData:
     """收集網路監控數據的便利函數"""
-    from app.services.command_executor import command_executor
+    from services.command_executor import command_executor
     monitor = NetworkMonitor(command_executor, default_thresholds)
     return await monitor.collect_network_metrics(config, server_id)
 
@@ -1171,7 +1171,7 @@ class MonitoringCollectorService:
     """監控數據收集主服務"""
     
     def __init__(self, thresholds: Optional[MonitoringThresholds] = None):
-        from app.services.command_executor import command_executor
+        from services.command_executor import command_executor
         self.executor = command_executor
         self.thresholds = thresholds or default_thresholds
         

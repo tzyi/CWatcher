@@ -17,7 +17,7 @@ from enum import Enum
 from fastapi import WebSocket, WebSocketDisconnect
 from contextlib import asynccontextmanager
 
-from app.core.config import settings
+from core.config import settings
 
 # 設定日誌
 logger = logging.getLogger(__name__)
@@ -182,20 +182,6 @@ class WebSocketManager:
             "start_time": datetime.now()
         }
         
-        # 啟動背景任務
-        self._start_background_tasks()
-    
-    def _start_background_tasks(self):
-        """啟動背景任務"""
-        if not self.heartbeat_task or self.heartbeat_task.done():
-            self.heartbeat_task = asyncio.create_task(self._heartbeat_loop())
-        
-        if not self.cleanup_task or self.cleanup_task.done():
-            self.cleanup_task = asyncio.create_task(self._cleanup_loop())
-            
-        if not self.broadcast_task or self.broadcast_task.done():
-            self.broadcast_task = asyncio.create_task(self._broadcast_loop())
-    
     async def connect(self, websocket: WebSocket, client_ip: str = "unknown", 
                      user_agent: str = "unknown") -> str:
         """建立 WebSocket 連接"""
@@ -604,6 +590,94 @@ class WebSocketManager:
             return connection.get_connection_info() if connection else None
         else:
             return [conn.get_connection_info() for conn in self.connections.values()]
+    
+    def _start_background_tasks(self):
+        """啟動背景任務"""
+        logger.info("啟動 WebSocket 背景任務...")
+        
+        # 啟動心跳檢測任務
+        if not self.heartbeat_task or self.heartbeat_task.done():
+            self.heartbeat_task = asyncio.create_task(self._heartbeat_loop())
+        
+        # 啟動清理任務
+        if not self.cleanup_task or self.cleanup_task.done():
+            self.cleanup_task = asyncio.create_task(self._cleanup_loop())
+        
+        # 啟動廣播任務
+        if not self.broadcast_task or self.broadcast_task.done():
+            self.broadcast_task = asyncio.create_task(self._broadcast_loop())
+    
+    def get_connection_count(self) -> int:
+        """取得當前連接數量"""
+        return len([conn for conn in self.connections.values() 
+                   if conn.state == ConnectionState.CONNECTED])
+    
+    async def _heartbeat_loop(self):
+        """心跳檢測循環"""
+        try:
+            while True:
+                await asyncio.sleep(30)  # 30秒檢查一次
+                await self._check_heartbeat()
+        except asyncio.CancelledError:
+            logger.info("心跳檢測任務已取消")
+        except Exception as e:
+            logger.error(f"心跳檢測任務錯誤: {e}")
+    
+    async def _cleanup_loop(self):
+        """清理循環"""
+        try:
+            while True:
+                await asyncio.sleep(60)  # 60秒清理一次
+                await self._cleanup_dead_connections()
+        except asyncio.CancelledError:
+            logger.info("清理任務已取消")
+        except Exception as e:
+            logger.error(f"清理任務錯誤: {e}")
+    
+    async def _broadcast_loop(self):
+        """廣播循環"""
+        try:
+            while True:
+                message = await self.broadcast_queue.get()
+                if message is None:  # 終止信號
+                    break
+                await self._process_broadcast_message(message)
+        except asyncio.CancelledError:
+            logger.info("廣播任務已取消")
+        except Exception as e:
+            logger.error(f"廣播任務錯誤: {e}")
+    
+    async def _check_heartbeat(self):
+        """檢查所有連接的心跳狀態"""
+        current_time = datetime.now()
+        dead_connections = []
+        
+        for connection_id, connection in self.connections.items():
+            if current_time - connection.last_pong > timedelta(seconds=90):
+                dead_connections.append(connection_id)
+        
+        for connection_id in dead_connections:
+            await self.disconnect(connection_id, "heartbeat_timeout")
+    
+    async def _cleanup_dead_connections(self):
+        """清理死連接"""
+        dead_connections = []
+        
+        for connection_id, connection in self.connections.items():
+            if not connection.is_alive():
+                dead_connections.append(connection_id)
+        
+        for connection_id in dead_connections:
+            await self.disconnect(connection_id, "connection_dead")
+    
+    async def _process_broadcast_message(self, message):
+        """處理廣播訊息"""
+        if hasattr(message, 'server_id') and message.server_id:
+            # 發送給特定伺服器的訂閱者
+            await self.broadcast_to_server_subscribers(message.server_id, message)
+        else:
+            # 發送給所有連接
+            await self.broadcast_to_all(message)
     
     async def shutdown(self):
         """關閉 WebSocket 管理器"""

@@ -17,11 +17,11 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text, func, desc, asc
 from contextlib import asynccontextmanager
 
-from app.core.deps import get_db
-from app.models.system_metrics import SystemMetrics
-from app.models.server import Server
-from app.services.monitoring_collector import MonitoringData, MetricType, AlertLevel
-from app.core.config import settings
+from core.deps import get_db
+from models.system_metrics import SystemMetrics
+from models.server import Server
+from services.monitoring_collector import MonitoringData, MetricType, AlertLevel
+from core.config import settings
 
 # 設定日誌
 logger = logging.getLogger(__name__)
@@ -46,6 +46,7 @@ class ProcessingStats:
     duplicate_records: int = 0
     processing_time: float = 0.0
     storage_time: float = 0.0
+    buffer_size: int = 0  # 緩衝區大小
     errors: List[str] = field(default_factory=list)
 
 
@@ -684,6 +685,9 @@ class DataProcessor:
     
     def get_processing_stats(self) -> ProcessingStats:
         """取得處理統計"""
+        # 確保返回包含所有欄位的統計對象
+        if not hasattr(self._processing_stats, 'buffer_size'):
+            self._processing_stats.buffer_size = len(self.storage_manager.buffer) if hasattr(self.storage_manager, 'buffer') else 0
         return self._processing_stats
 
 
@@ -720,7 +724,7 @@ if __name__ == "__main__":
         print("🔧 測試數據標準化...")
         
         # 模擬監控數據
-        from app.services.monitoring_collector import MonitoringData, MetricType, AlertLevel
+        from services.monitoring_collector import MonitoringData, MetricType, AlertLevel
         
         mock_cpu_data = MonitoringData(
             metric_type=MetricType.CPU,
@@ -808,7 +812,7 @@ if __name__ == "__main__":
         print("\n🚀 測試完整數據處理流程...")
         
         # 模擬監控數據
-        from app.services.monitoring_collector import MonitoringData, MetricType, AlertLevel
+        from services.monitoring_collector import MonitoringData, MetricType, AlertLevel
         
         mock_monitoring_data = {
             MetricType.CPU: MonitoringData(

@@ -11,9 +11,9 @@ from fastapi.testclient import TestClient
 import json
 
 # 我們需要導入主應用程式來建立測試客戶端
-from app.main import app
-from app.services.ssh_manager import SSHConnectionConfig
-from app.services.security_service import SecurityLevel
+from main import app
+from services.ssh_manager import SSHConnectionConfig
+from services.security_service import SecurityLevel
 
 
 # 建立測試客戶端

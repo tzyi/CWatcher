@@ -11,12 +11,12 @@ from unittest.mock import Mock, patch, MagicMock
 from datetime import datetime, timedelta
 import paramiko
 
-from app.services.ssh_manager import (
+from services.ssh_manager import (
     SSHManager, SSHConnectionConfig, ConnectionInfo, ConnectionStatus,
     SSHConnectionPool, AuthType
 )
-from app.services.auth_service import AuthService
-from app.utils.encryption import AESGCMEncryption
+from services.auth_service import AuthService
+from utils.encryption import AESGCMEncryption
 
 
 class TestSSHConnectionConfig:
@@ -445,7 +445,7 @@ class TestSSHManagerHelpers:
     @patch('app.services.ssh_manager.ssh_manager.test_connection')
     async def test_test_ssh_connection(self, mock_test):
         """測試 SSH 連接測試便利函數"""
-        from app.services.ssh_manager import test_ssh_connection
+        from services.ssh_manager import test_ssh_connection
         
         mock_test.return_value = {
             "success": True,
@@ -473,7 +473,7 @@ class TestSSHManagerHelpers:
     @patch('app.services.ssh_manager.ssh_manager.execute_command')
     async def test_execute_ssh_command(self, mock_execute):
         """測試 SSH 指令執行便利函數"""
-        from app.services.ssh_manager import execute_ssh_command
+        from services.ssh_manager import execute_ssh_command
         
         mock_execute.return_value = ("output", "", 0)
         

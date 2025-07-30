@@ -10,15 +10,15 @@ import logging
 import time
 from typing import Dict, List, Optional, Any, Set
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from enum import Enum
 from collections import defaultdict
 
-from app.services.task_scheduler import task_scheduler, TaskType, TaskStatus
-from app.services.ssh_manager import ssh_manager
-from app.services.websocket_push_service import push_service
-from app.services.data_processor import data_processor
-from app.core.config import settings
+from services.task_scheduler import task_scheduler, TaskType, TaskStatus
+from services.ssh_manager import ssh_manager
+from services.websocket_push_service import push_service
+from services.data_processor import data_processor
+from core.config import settings
 
 # 設定日誌
 logger = logging.getLogger(__name__)
@@ -48,12 +48,18 @@ class ResourceLock:
     resource_type: ResourceType
     resource_id: str
     locked_by: str  # 任務ID
-    lock_time: datetime = field(default_factory=datetime.now)
+    lock_time: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     timeout: float = 300.0  # 超時時間（秒）
     
     def is_expired(self) -> bool:
         """檢查鎖是否過期"""
-        return (datetime.now() - self.lock_time).total_seconds() > self.timeout
+        current_time = datetime.now(timezone.utc)
+        if self.lock_time.tzinfo is None:
+            # 如果 lock_time 是 naive datetime，轉換為 UTC
+            lock_time_utc = self.lock_time.replace(tzinfo=timezone.utc)
+        else:
+            lock_time_utc = self.lock_time
+        return (current_time - lock_time_utc).total_seconds() > self.timeout
 
 
 @dataclass

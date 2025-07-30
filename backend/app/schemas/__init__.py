@@ -23,19 +23,9 @@ from schemas.server import (
 from schemas.metrics import (
     CPUMetrics,
     MemoryMetrics,
-    SwapMetrics,
     DiskMetrics,
     NetworkMetrics,
-    SystemMetrics,
-    CollectionInfo,
-    SystemMetricsCreate,
-    SystemMetricsResponse,
-    MetricsHistoryResponse,
-    MetricsQueryParams,
-    MetricsSummary,
-    RealTimeMetrics,
-    AlertThresholds,
-    MetricsAlert,
+    AllMetrics,
 )
 
 from schemas.system_info import (
@@ -54,6 +44,7 @@ from schemas.system_info import (
     SystemComparisonItem,
     SystemComparison,
     SystemInfoStats,
+    CollectionInfo,
 )
 
 __all__ = [
@@ -75,19 +66,10 @@ __all__ = [
     # Metrics schemas
     "CPUMetrics",
     "MemoryMetrics",
-    "SwapMetrics", 
     "DiskMetrics",
     "NetworkMetrics",
-    "SystemMetrics",
+    "AllMetrics",
     "CollectionInfo",
-    "SystemMetricsCreate",
-    "SystemMetricsResponse",
-    "MetricsHistoryResponse",
-    "MetricsQueryParams",
-    "MetricsSummary",
-    "RealTimeMetrics",
-    "AlertThresholds",
-    "MetricsAlert",
     
     # System info schemas
     "OSInfo",

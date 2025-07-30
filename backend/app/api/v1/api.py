@@ -40,3 +40,12 @@ api_router.include_router(task_management.router, prefix="/tasks", tags=["任務
 async def ping():
     """API 健康檢查"""
     return {"message": "pong"}
+
+@api_router.get("/health")
+async def api_health_check():
+    """API 健康檢查端點"""
+    return {
+        "message": "CWatcher API v1 Service",
+        "version": "0.1.0",
+        "status": "running"
+    }

@@ -10,9 +10,9 @@ from typing import Dict, Any, Optional
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Path, Query
 from sqlalchemy.orm import Session
 
-from app.core.deps import get_db, get_current_server
-from app.models.server import Server
-from app.schemas.command import (
+from core.deps import get_db, get_current_user
+from models.server import Server
+from schemas.command import (
     CommandExecuteRequest, CommandExecuteResponse,
     PredefinedCommandRequest, PredefinedCommandsResponse,
     SystemInfoRequest, SystemInfoResponse,
@@ -20,10 +20,10 @@ from app.schemas.command import (
     CommandResult, CompleteSystemInfo, BasicSystemInfo,
     validate_server_id, validate_timeout
 )
-from app.services.command_executor import command_executor, execute_system_command, execute_custom_command
-from app.services.system_collector import system_collector, collect_server_system_info, collect_server_basic_info
-from app.services.ssh_manager import ssh_manager
-from app.utils.exceptions import SSHConnectionError, CommandExecutionError, SecurityError
+from services.command_executor import command_executor, execute_system_command, execute_custom_command
+from services.system_collector import system_collector, collect_server_system_info, collect_server_basic_info
+from services.ssh_manager import ssh_manager
+from utils.exceptions import SSHConnectionError, CommandExecutionError, SecurityError
 
 
 # 設定日誌
@@ -59,7 +59,7 @@ async def execute_custom_command_endpoint(
             request.timeout = validate_timeout(request.timeout)
         
         # 獲取伺服器資訊
-        server = get_current_server(db, server_id)
+        server = get_current_user(db, server_id)
         if not server:
             raise HTTPException(status_code=404, detail="伺服器不存在")
         
@@ -143,7 +143,7 @@ async def execute_predefined_command_endpoint(
         server_id = validate_server_id(server_id)
         
         # 獲取伺服器資訊
-        server = get_current_server(db, server_id)
+        server = get_current_user(db, server_id)
         if not server:
             raise HTTPException(status_code=404, detail="伺服器不存在")
         
@@ -239,7 +239,7 @@ async def collect_system_info_endpoint(
         server_id = validate_server_id(server_id)
         
         # 獲取伺服器資訊
-        server = get_current_server(db, server_id)
+        server = get_current_user(db, server_id)
         if not server:
             raise HTTPException(status_code=404, detail="伺服器不存在")
         
@@ -344,7 +344,7 @@ async def get_basic_system_info_endpoint(
         server_id = validate_server_id(server_id)
         
         # 獲取伺服器資訊
-        server = get_current_server(db, server_id)
+        server = get_current_user(db, server_id)
         if not server:
             raise HTTPException(status_code=404, detail="伺服器不存在")
         
@@ -443,7 +443,7 @@ async def test_server_connection_endpoint(
         server_id = validate_server_id(server_id)
         
         # 獲取伺服器資訊
-        server = get_current_server(db, server_id)
+        server = get_current_user(db, server_id)
         if not server:
             raise HTTPException(status_code=404, detail="伺服器不存在")
         
@@ -504,35 +504,4 @@ async def update_server_last_check(server_id: int, db: Session):
         db.rollback()
 
 
-# 異常處理器
-@router.exception_handler(SecurityError)
-async def security_error_handler(request, exc):
-    """安全錯誤處理器"""
-    return ErrorResponse(
-        success=False,
-        message=f"安全檢查失敗: {str(exc)}",
-        error_code="SECURITY_ERROR",
-        timestamp=datetime.now()
-    )
-
-
-@router.exception_handler(SSHConnectionError)
-async def ssh_connection_error_handler(request, exc):
-    """SSH 連接錯誤處理器"""
-    return ErrorResponse(
-        success=False,
-        message=f"SSH 連接失敗: {str(exc)}",
-        error_code="SSH_CONNECTION_ERROR",
-        timestamp=datetime.now()
-    )
-
-
-@router.exception_handler(CommandExecutionError)
-async def command_execution_error_handler(request, exc):
-    """指令執行錯誤處理器"""
-    return ErrorResponse(
-        success=False,
-        message=f"指令執行失敗: {str(exc)}",
-        error_code="COMMAND_EXECUTION_ERROR",
-        timestamp=datetime.now()
-    )
+# (移除 @router.exception_handler 相關區塊，統一由 main.py 全域 exception handler 處理)

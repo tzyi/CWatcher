@@ -10,12 +10,12 @@ import time
 from unittest.mock import Mock, patch, AsyncMock
 from datetime import datetime
 
-from app.services.command_executor import (
+from services.command_executor import (
     CommandExecutor, CommandSecurityChecker, CommandParser, CommandCache,
     CommandType, ExecutionStatus, CommandResult, CommandDefinition
 )
-from app.services.ssh_manager import SSHConnectionConfig, SSHManager
-from app.utils.exceptions import SecurityError, CommandExecutionError
+from services.ssh_manager import SSHConnectionConfig, SSHManager
+from utils.exceptions import SecurityError, CommandExecutionError
 
 
 class TestCommandSecurityChecker:

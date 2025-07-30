@@ -11,8 +11,8 @@ from datetime import datetime, timedelta
 from pydantic import BaseModel, Field
 import logging
 
-from app.core.deps import get_db
-from app.services.data_cleaner import (
+from core.deps import get_db
+from services.data_cleaner import (
     data_cleaner,
     scheduled_cleaner,
     CleanupLevel,
@@ -21,7 +21,7 @@ from app.services.data_cleaner import (
     get_storage_status,
     get_cleanup_suggestions
 )
-from app.services.data_aggregator import (
+from services.data_aggregator import (
     time_series_aggregator,
     batch_aggregator,
     historical_manager,
@@ -31,11 +31,11 @@ from app.services.data_aggregator import (
     get_server_dashboard_data,
     get_multiple_servers_dashboard_data
 )
-from app.services.data_processor import (
+from services.data_processor import (
     data_processor,
     flush_monitoring_data
 )
-from app.services.task_scheduler import (
+from services.task_scheduler import (
     task_scheduler,
     get_scheduler_status
 )
@@ -199,8 +199,8 @@ async def execute_data_cleanup(
 
 @router.post("/cleanup/archives")
 async def cleanup_archive_files(
-    days_to_keep: int = Query(90, description="保留歸檔天數"),
-    background_tasks: BackgroundTasks
+    background_tasks: BackgroundTasks,
+    days_to_keep: int = Query(90, description="保留歸檔天數")
 ):
     """
     清理舊的歸檔檔案

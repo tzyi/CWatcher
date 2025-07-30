@@ -15,12 +15,12 @@ import asyncio
 import logging
 
 from core.deps import get_db
-from models.server import Server
 from services.ssh_manager import ssh_manager, SSHConnectionConfig
 from services.auth_service import auth_service, AuthenticationError
 from services.security_service import security_service, check_connection_security
-from schemas.server import ServerCreate, ServerUpdate, ServerResponse
 from utils.encryption import EncryptionError
+from models.server import Server
+from schemas.server import ServerCreate, ServerUpdate, ServerResponse
 
 
 logger = logging.getLogger(__name__)
@@ -51,7 +51,7 @@ class ConnectionTestRequest(BaseModel):
         return v
     
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "host": "192.168.1.100",
                 "port": 22,
@@ -382,7 +382,7 @@ async def get_security_events(
     返回最近的安全事件和威脅檢測記錄
     """
     try:
-        from app.services.security_service import SecurityLevel
+        from services.security_service import SecurityLevel
         
         severity_filter = None
         if severity:
@@ -484,18 +484,17 @@ async def remove_from_security_whitelist(
         raise HTTPException(status_code=500, detail=f"操作失敗: {str(e)}")
 
 
-# 錯誤處理
-@router.exception_handler(AuthenticationError)
-async def auth_error_handler(request, exc):
-    return JSONResponse(
-        status_code=401,
-        content={"detail": f"認證錯誤: {str(exc)}"}
-    )
-
-
-@router.exception_handler(EncryptionError)
-async def encryption_error_handler(request, exc):
-    return JSONResponse(
-        status_code=500,
-        content={"detail": f"加密錯誤: {str(exc)}"}
-    )
+# 錯誤處理 (已移至 main.py)
+# @router.exception_handler(AuthenticationError)
+# async def auth_error_handler(request, exc):
+#     return JSONResponse(
+#         status_code=401,
+#         content={"detail": f"認證錯誤: {str(exc)}"}
+#     )
+#
+# @router.exception_handler(EncryptionError)
+# async def encryption_error_handler(request, exc):
+#     return JSONResponse(
+#         status_code=500,
+#         content={"detail": f"加密錯誤: {str(exc)}"}
+#     )

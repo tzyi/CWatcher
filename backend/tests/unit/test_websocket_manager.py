@@ -10,7 +10,7 @@ import json
 from unittest.mock import Mock, AsyncMock, patch
 from datetime import datetime, timedelta
 
-from app.services.websocket_manager import (
+from services.websocket_manager import (
     WebSocketManager, WebSocketConnection, WebSocketMessage, MessageType,
     ConnectionState, SubscriptionFilter
 )

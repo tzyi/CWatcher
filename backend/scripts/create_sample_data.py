@@ -10,11 +10,11 @@ from datetime import datetime, timedelta
 import random
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.base import AsyncSessionLocal
-from app.models.server import Server
-from app.models.system_metrics import SystemMetrics
-from app.models.system_info import SystemInfo
-from app.core.config import settings
+from db.base import AsyncSessionLocal
+from models.server import Server
+from models.system_metrics import SystemMetrics
+from models.system_info import SystemInfo
+from core.config import settings
 
 
 async def create_sample_servers(session: AsyncSession) -> list:

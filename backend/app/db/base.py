@@ -74,7 +74,7 @@ async def init_db() -> None:
     """初始化資料庫，建立所有表格"""
     async with engine.begin() as conn:
         # 匯入所有模型以確保表格被建立
-        from app.models import server, system_metrics, system_info
+        from models import server, system_metrics, system_info
         
         await conn.run_sync(Base.metadata.create_all)
 

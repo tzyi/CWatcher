@@ -20,10 +20,10 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text, func, desc, and_, or_, delete
 from contextlib import asynccontextmanager
 
-from app.core.deps import get_db
-from app.models.system_metrics import SystemMetrics
-from app.models.server import Server
-from app.core.config import settings
+from core.deps import get_db
+from models.system_metrics import SystemMetrics
+from models.server import Server
+from core.config import settings
 
 # 設定日誌
 logger = logging.getLogger(__name__)
@@ -126,7 +126,7 @@ class DataCleaner:
         )
     }
     
-    def __init__(self, archive_path: str = "/var/lib/cwatcher/archives"):
+    def __init__(self, archive_path: str = "backend/app/archives"):
         self.archive_path = Path(archive_path)
         self.archive_path.mkdir(parents=True, exist_ok=True)
         self.db_session_factory = get_db

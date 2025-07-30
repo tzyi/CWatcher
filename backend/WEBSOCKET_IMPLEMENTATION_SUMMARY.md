@@ -227,13 +227,13 @@ backend/
 
 1. **啟動 WebSocket 優化器**
    ```python
-   from app.utils.websocket_optimization import start_websocket_optimizer
+   from utils.websocket_optimization import start_websocket_optimizer
    await start_websocket_optimizer()
    ```
 
 2. **啟動任務調度器** (包含推送服務)
    ```python
-   from app.services.task_scheduler import start_task_scheduler
+   from services.task_scheduler import start_task_scheduler
    await start_task_scheduler()
    ```
 

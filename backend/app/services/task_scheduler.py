@@ -7,9 +7,10 @@ CWatcher 任務調度服務
 
 import asyncio
 import logging
+import time
 from typing import Dict, List, Optional, Any, Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from enum import Enum
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
@@ -17,15 +18,16 @@ from apscheduler.triggers.interval import IntervalTrigger
 import signal
 import sys
 
-from app.core.config import settings
-from app.services.data_cleaner import data_cleaner, CleanupLevel
-from app.services.data_processor import data_processor
-from app.services.monitoring_collector import monitoring_service
-from app.services.websocket_push_service import push_service
-from app.services.system_collector import system_collector
-from app.services.ssh_manager import ssh_manager
-from app.db.base import get_db
-from app.models.server import Server
+from core.config import settings
+from services.data_cleaner import data_cleaner, CleanupLevel
+from services.data_processor import data_processor
+from services.monitoring_collector import monitoring_service
+from services.websocket_push_service import push_service
+from services.system_collector import system_collector
+from services.ssh_manager import ssh_manager
+from db.base import get_db
+from models.server import Server
+from sqlalchemy import select
 
 # 設定日誌
 logger = logging.getLogger(__name__)
@@ -319,7 +321,10 @@ class TaskScheduler:
                 )
                 
                 # 設定下次執行時間
-                task.next_run = job.next_run_time
+                if hasattr(job, 'next_run_time') and job.next_run_time:
+                    task.next_run = job.next_run_time
+                else:
+                    task.next_run = None
             
             # 保存任務
             self.tasks[task_id] = task
@@ -421,8 +426,10 @@ class TaskScheduler:
             # 更新下次執行時間
             if task.enabled:
                 job = self.scheduler.get_job(task_id)
-                if job:
+                if job and hasattr(job, 'next_run_time') and job.next_run_time:
                     task.next_run = job.next_run_time
+                else:
+                    task.next_run = None
     
     def _add_execution_history(self, result: TaskExecutionResult):
         """添加執行歷史記錄"""
@@ -462,7 +469,8 @@ class TaskScheduler:
             
             # 獲取所有活躍的伺服器
             async for db in get_db():
-                servers = db.query(Server).filter(Server.is_active == True).all()
+                result = await db.execute(select(Server).where(Server.is_active == True))
+                servers = result.scalars().all()
                 
                 if not servers:
                     logger.info("沒有找到活躍的伺服器，跳過監控數據收集")
@@ -577,7 +585,8 @@ class TaskScheduler:
             
             # 獲取所有活躍的伺服器
             async for db in get_db():
-                servers = db.query(Server).filter(Server.is_active == True).all()
+                result = await db.execute(select(Server).where(Server.is_active == True))
+                servers = result.scalars().all()
                 
                 if not servers:
                     return {"servers_processed": 0, "success_count": 0}
@@ -639,7 +648,9 @@ class TaskScheduler:
             
             # 檢查SSH連接狀態
             async for db in get_db():
-                servers = db.query(Server).filter(Server.is_active == True).all()
+                from sqlalchemy import select
+                result = await db.execute(select(Server).filter(Server.is_active == True))
+                servers = result.scalars().all()
                 ssh_stats = {
                     "total_servers": len(servers),
                     "connected_count": 0,
@@ -791,7 +802,10 @@ class TaskScheduler:
                 name=task.name,
                 replace_existing=True
             )
-            task.next_run = job.next_run_time
+            if hasattr(job, 'next_run_time') and job.next_run_time:
+                task.next_run = job.next_run_time
+            else:
+                task.next_run = None
         
         logger.info(f"任務 '{task.name}' 已啟用")
     

@@ -17,10 +17,10 @@ from sqlalchemy import text, func, desc, asc, and_, or_
 from statistics import mean, median
 import math
 
-from app.core.deps import get_db
-from app.models.system_metrics import SystemMetrics
-from app.models.server import Server
-from app.core.config import settings
+from core.deps import get_db
+from models.system_metrics import SystemMetrics
+from models.server import Server
+from core.config import settings
 
 # 設定日誌
 logger = logging.getLogger(__name__)

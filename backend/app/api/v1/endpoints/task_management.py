@@ -10,11 +10,11 @@ from datetime import datetime
 from fastapi import APIRouter, HTTPException, Depends, Query
 from pydantic import BaseModel, Field
 
-from app.services.task_scheduler import (
+from services.task_scheduler import (
     task_scheduler, TaskExecutionResult, get_scheduler_status
 )
-from app.services.task_coordinator import task_coordinator, get_coordination_status
-from app.core.deps import get_current_active_user
+from services.task_coordinator import task_coordinator, get_coordination_status
+from core.deps import get_current_user
 
 router = APIRouter()
 
@@ -101,7 +101,7 @@ async def get_task_details(task_id: str):
 async def control_task(
     task_id: str, 
     request: TaskControlRequest,
-    current_user = Depends(get_current_active_user)
+    current_user = Depends(get_current_user)
 ):
     """控制任務的執行狀態"""
     try:
@@ -142,7 +142,7 @@ async def control_task(
 async def update_task_retry_config(
     task_id: str,
     config: TaskRetryConfigRequest,
-    current_user = Depends(get_current_active_user)
+    current_user = Depends(get_current_user)
 ):
     """更新任務的重試配置"""
     try:

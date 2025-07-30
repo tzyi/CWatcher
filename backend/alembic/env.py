@@ -8,9 +8,9 @@ from sqlalchemy.engine import Connection
 from alembic import context
 
 # CWatcher 特定匯入
-from app.db.base import Base
-from app.core.config import settings
-from app.models import *  # 匯入所有模型
+from db.base import Base
+from core.config import settings
+from models import *  # 匯入所有模型
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

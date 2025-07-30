@@ -17,8 +17,8 @@ from collections import defaultdict
 import json
 import hashlib
 
-from app.services.ssh_manager import SSHManager, SSHConnectionConfig, ssh_manager
-from app.core.config import settings
+from services.ssh_manager import SSHManager, SSHConnectionConfig, ssh_manager
+from core.config import settings
 
 
 # 設定日誌

@@ -15,7 +15,7 @@ from unittest.mock import Mock, AsyncMock
 sys.path.insert(0, '/home/cabie/cabie/01_project/CWatcher/backend')
 
 try:
-    from app.services.websocket_manager import (
+    from services.websocket_manager import (
         WebSocketManager, WebSocketConnection, WebSocketMessage, MessageType,
         ConnectionState, SubscriptionFilter
     )

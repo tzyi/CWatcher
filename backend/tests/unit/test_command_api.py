@@ -10,15 +10,15 @@ from unittest.mock import Mock, patch, AsyncMock
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from app.main import app
-from app.models.server import Server
-from app.schemas.command import (
+from main import app
+from models.server import Server
+from schemas.command import (
     CommandExecuteRequest, PredefinedCommandRequest, SystemInfoRequest,
     CommandResult, ExecutionStatus, CommandType
 )
-from app.services.command_executor import command_executor
-from app.services.system_collector import system_collector
-from app.core.deps import get_db, get_current_server
+from services.command_executor import command_executor
+from services.system_collector import system_collector
+from core.deps import get_db, get_current_server
 
 
 # 建立測試客戶端
@@ -304,7 +304,7 @@ class TestSystemInfoAPI:
     @patch('app.api.v1.endpoints.command.get_db')
     async def test_collect_system_info_success(self, mock_get_db, mock_collect_info, mock_get_server):
         """測試成功收集系統資訊"""
-        from app.services.system_collector import SystemInfo, SystemInfoType
+        from services.system_collector import SystemInfo, SystemInfoType
         
         mock_get_server.return_value = self.test_server
         mock_get_db.return_value = Mock(spec=Session)
@@ -523,7 +523,7 @@ class TestErrorHandling:
     @patch('app.api.v1.endpoints.command.get_db')
     def test_security_error_handling(self, mock_get_db, mock_execute_command, mock_get_server):
         """測試安全錯誤處理"""
-        from app.utils.exceptions import SecurityError
+        from utils.exceptions import SecurityError
         
         mock_get_server.return_value = Server(id=1, is_active=True)
         mock_get_db.return_value = Mock(spec=Session)
@@ -550,7 +550,7 @@ class TestErrorHandling:
     @patch('app.api.v1.endpoints.command.get_db')
     def test_ssh_connection_error_handling(self, mock_get_db, mock_execute_command, mock_get_server):
         """測試 SSH 連接錯誤處理"""
-        from app.utils.exceptions import SSHConnectionError
+        from utils.exceptions import SSHConnectionError
         
         mock_get_server.return_value = Server(id=1, is_active=True)
         mock_get_db.return_value = Mock(spec=Session)

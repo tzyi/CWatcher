@@ -39,6 +39,8 @@ class CPUMetrics(BaseModel):
     alert_level: AlertLevelEnum = Field(..., description="警告等級")
     alert_message: Optional[str] = Field(None, description="警告訊息")
 
+    model_config = {'protected_namespaces': ()}
+
 
 class MemoryMetrics(BaseModel):
     """記憶體監控數據模型"""
@@ -121,7 +123,7 @@ class MonitoringSummary(BaseModel):
     metrics: Dict[str, Any] = Field(..., description="監控指標數據")
     
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "server_id": 1,
                 "timestamp": "2024-01-15T10:30:00",

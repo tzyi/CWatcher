@@ -24,7 +24,7 @@ async def test_task_scheduler():
     print("🕐 測試任務調度器...")
     
     try:
-        from app.services.task_scheduler import task_scheduler
+        from services.task_scheduler import task_scheduler
         
         # 啟動調度器
         await task_scheduler.start()
@@ -68,7 +68,7 @@ async def test_task_coordinator():
     print("\n🎯 測試任務協調器...")
     
     try:
-        from app.services.task_coordinator import task_coordinator
+        from services.task_coordinator import task_coordinator
         
         # 啟動協調器
         await task_coordinator.start()
@@ -119,8 +119,8 @@ async def test_integration():
     print("\n🔧 測試系統整合...")
     
     try:
-        from app.services.task_scheduler import task_scheduler
-        from app.services.task_coordinator import task_coordinator
+        from services.task_scheduler import task_scheduler
+        from services.task_coordinator import task_coordinator
         
         # 運行短時間觀察任務執行
         print("⏱️ 運行30秒觀察任務執行...")
@@ -166,8 +166,8 @@ async def cleanup():
     print("\n🧹 清理資源...")
     
     try:
-        from app.services.task_coordinator import task_coordinator
-        from app.services.task_scheduler import task_scheduler
+        from services.task_coordinator import task_coordinator
+        from services.task_scheduler import task_scheduler
         
         # 停止協調器
         await task_coordinator.stop()

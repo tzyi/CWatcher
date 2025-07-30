@@ -11,13 +11,13 @@ from fastapi import APIRouter, HTTPException, Depends, Query, Path
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
-from app.services.websocket_push_service import (
+from services.websocket_push_service import (
     push_service, add_server_to_push_list, remove_server_from_push_list,
     push_server_monitoring_data, get_push_service_stats
 )
-from app.services.monitoring_collector import monitoring_service
-from app.services.ssh_manager import ssh_manager, SSHConnectionConfig
-from app.core.config import settings
+from services.monitoring_collector import monitoring_service
+from services.ssh_manager import ssh_manager, SSHConnectionConfig
+from core.config import settings
 
 # 設定日誌
 logger = logging.getLogger(__name__)
@@ -70,7 +70,7 @@ class ServerInfo(BaseModel):
 
 class MonitoringControl(BaseModel):
     """監控控制請求"""
-    action: str = Field(..., regex="^(start|stop|restart)$", description="控制動作")
+    action: str = Field(..., pattern="^(start|stop|restart)$", description="控制動作")
     push_interval: Optional[int] = Field(None, ge=10, le=300, description="推送間隔（秒）")
 
 
@@ -453,7 +453,7 @@ async def get_server_status(server_id: int = Path(..., description="伺服器 ID
 
 @router.post("/batch/monitoring", response_model=Dict[str, Any])
 async def batch_control_monitoring(
-    action: str = Query(..., regex="^(start|stop|restart)$", description="批量操作"),
+    action: str = Query(..., pattern="^(start|stop|restart)$", description="批量操作"),
     server_ids: Optional[List[int]] = Query(None, description="伺服器 ID 列表，為空則操作全部")
 ):
     """

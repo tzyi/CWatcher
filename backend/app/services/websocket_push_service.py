@@ -12,20 +12,20 @@ from typing import Dict, List, Optional, Any, Set
 from datetime import datetime, timedelta
 from dataclasses import dataclass, field
 
-from app.services.websocket_manager import (
+from services.websocket_manager import (
     websocket_manager, WebSocketMessage, MessageType,
     broadcast_monitoring_update, broadcast_status_change
 )
-from app.services.monitoring_collector import (
+from services.monitoring_collector import (
     monitoring_service, MonitoringCollectorService, MetricType, AlertLevel
 )
-from app.services.data_processor import data_processor, process_server_monitoring_data
-from app.services.ssh_manager import ssh_manager, SSHConnectionConfig
-from app.schemas.websocket import (
+from services.data_processor import data_processor, process_server_monitoring_data
+from services.ssh_manager import ssh_manager, SSHConnectionConfig
+from schemas.websocket import (
     create_monitoring_update_message, create_status_change_message,
     WSServerStatus, WSAlertLevel
 )
-from app.core.config import settings
+from core.config import settings
 
 # 設定日誌
 logger = logging.getLogger(__name__)

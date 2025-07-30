@@ -5,7 +5,7 @@ CWatcher WebSocket 訊息協議 Schema
 確保前後端通訊的一致性和可靠性
 """
 
-from typing import Dict, List, Optional, Any, Union
+from typing import Dict, List, Optional, Any, Union, Literal
 from datetime import datetime
 from pydantic import BaseModel, Field, validator
 from enum import Enum
@@ -94,19 +94,19 @@ class WSSubscriptionFilter(BaseModel):
 
 class WSSubscribeRequest(BaseModel):
     """訂閱請求"""
-    type: WSMessageType = Field(default=WSMessageType.SUBSCRIBE, const=True)
+    type: Literal[WSMessageType.SUBSCRIBE] = WSMessageType.SUBSCRIBE
     data: WSSubscriptionFilter = Field(..., description="訂閱設定")
 
 
 class WSUnsubscribeRequest(BaseModel):
     """取消訂閱請求"""
-    type: WSMessageType = Field(default=WSMessageType.UNSUBSCRIBE, const=True)
+    type: Literal[WSMessageType.UNSUBSCRIBE] = WSMessageType.UNSUBSCRIBE
     data: Dict[str, Any] = Field(default_factory=dict, description="取消訂閱設定")
 
 
 class WSSubscriptionAck(BaseModel):
     """訂閱確認回應"""
-    type: WSMessageType = Field(default=WSMessageType.SUBSCRIPTION_ACK, const=True)
+    type: Literal[WSMessageType.SUBSCRIPTION_ACK] = WSMessageType.SUBSCRIPTION_ACK
     data: Dict[str, Any] = Field(..., description="訂閱確認數據")
     
     class Data(BaseModel):
@@ -129,6 +129,8 @@ class WSCPUMetrics(BaseModel):
     model_name: Optional[str] = Field(None, description="CPU 型號")
     alert_level: WSAlertLevel = Field(..., description="警告等級")
     alert_message: Optional[str] = Field(None, description="警告訊息")
+
+    model_config = {'protected_namespaces': ()}
 
 
 class WSMemoryMetrics(BaseModel):
@@ -184,7 +186,7 @@ class WSMonitoringData(BaseModel):
 
 class WSMonitoringUpdate(BaseModel):
     """監控數據更新訊息"""
-    type: WSMessageType = Field(default=WSMessageType.MONITORING_UPDATE, const=True)
+    type: Literal[WSMessageType.MONITORING_UPDATE] = WSMessageType.MONITORING_UPDATE
     data: WSMonitoringData = Field(..., description="監控數據")
 
 
@@ -210,7 +212,7 @@ class WSStatusChangeData(BaseModel):
 
 class WSStatusChange(BaseModel):
     """狀態變化訊息"""
-    type: WSMessageType = Field(default=WSMessageType.STATUS_CHANGE, const=True)
+    type: Literal[WSMessageType.STATUS_CHANGE] = WSMessageType.STATUS_CHANGE
     data: WSStatusChangeData = Field(..., description="狀態變化數據")
 
 
@@ -227,7 +229,7 @@ class WSConnectionInfo(BaseModel):
 
 class WSConnectionInfoMessage(BaseModel):
     """連接資訊訊息"""
-    type: WSMessageType = Field(default=WSMessageType.CONNECTION_INFO, const=True)
+    type: Literal[WSMessageType.CONNECTION_INFO] = WSMessageType.CONNECTION_INFO
     data: WSConnectionInfo = Field(..., description="連接資訊")
 
 
@@ -241,7 +243,7 @@ class WSErrorData(BaseModel):
 
 class WSError(BaseModel):
     """錯誤訊息"""
-    type: WSMessageType = Field(default=WSMessageType.ERROR, const=True)
+    type: Literal[WSMessageType.ERROR] = WSMessageType.ERROR
     data: WSErrorData = Field(..., description="錯誤數據")
 
 
@@ -249,19 +251,19 @@ class WSError(BaseModel):
 
 class WSPing(BaseModel):
     """Ping 訊息"""
-    type: WSMessageType = Field(default=WSMessageType.PING, const=True)
+    type: Literal[WSMessageType.PING] = WSMessageType.PING
     data: Dict[str, Any] = Field(default_factory=dict)
 
 
 class WSPong(BaseModel):
     """Pong 訊息"""
-    type: WSMessageType = Field(default=WSMessageType.PONG, const=True)
+    type: Literal[WSMessageType.PONG] = WSMessageType.PONG
     data: Dict[str, Any] = Field(default_factory=dict)
 
 
 class WSHeartbeat(BaseModel):
     """心跳訊息"""
-    type: WSMessageType = Field(default=WSMessageType.HEARTBEAT, const=True)
+    type: Literal[WSMessageType.HEARTBEAT] = WSMessageType.HEARTBEAT
     data: Dict[str, Any] = Field(default_factory=dict)
 
 

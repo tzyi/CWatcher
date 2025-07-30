@@ -9,7 +9,7 @@ import base64
 import os
 from unittest.mock import patch
 
-from app.utils.encryption import (
+from utils.encryption import (
     AESGCMEncryption, EncryptionError,
     encryption, encrypt_text, decrypt_text, verify_encryption
 )

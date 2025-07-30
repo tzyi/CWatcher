@@ -10,9 +10,9 @@ from unittest.mock import Mock, AsyncMock, patch
 from fastapi.testclient import TestClient
 from datetime import datetime
 
-from app.main import app
-from app.models.server import Server
-from app.services.monitoring_collector import (
+from main import app
+from models.server import Server
+from services.monitoring_collector import (
     MonitoringData,
     MetricType,
     AlertLevel,

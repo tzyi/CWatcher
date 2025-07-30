@@ -10,9 +10,9 @@ from typing import Optional, Dict, Any
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, HTTPException, Query, Request
 from fastapi.responses import JSONResponse
 
-from app.services.websocket_manager import websocket_manager, WebSocketManager
-from app.core.deps import get_current_user  # 如果需要身份驗證
-from app.core.config import settings
+from services.websocket_manager import websocket_manager, WebSocketManager
+from core.deps import get_current_user  # 如果需要身份驗證
+from core.config import settings
 
 # 設定日誌
 logger = logging.getLogger(__name__)
@@ -212,7 +212,7 @@ async def broadcast_message(
     用於系統管理員發送系統通知或緊急訊息
     """
     try:
-        from app.services.websocket_manager import WebSocketMessage, MessageType
+        from services.websocket_manager import WebSocketMessage, MessageType
         
         # 驗證訊息格式
         if "type" not in message_data or "data" not in message_data:
@@ -259,7 +259,7 @@ async def broadcast_to_server_subscribers(
     用於向特定伺服器的監控客戶端發送訊息
     """
     try:
-        from app.services.websocket_manager import WebSocketMessage, MessageType
+        from services.websocket_manager import WebSocketMessage, MessageType
         
         # 驗證訊息格式
         if "type" not in message_data or "data" not in message_data:
@@ -381,8 +381,8 @@ async def websocket_health_check():
 
 # 添加到主應用程式的生命週期事件中
 async def setup_websocket_manager():
-    """初始化 WebSocket 管理器"""
-    # WebSocket 管理器會在導入時自動初始化
+    """初始化 WebSocket 管理器，並啟動背景任務"""
+    websocket_manager._start_background_tasks()
     logger.info("WebSocket 管理器已準備就緒")
 
 

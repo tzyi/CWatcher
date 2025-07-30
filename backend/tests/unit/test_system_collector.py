@@ -9,13 +9,13 @@ import asyncio
 from unittest.mock import Mock, patch, AsyncMock
 from datetime import datetime
 
-from app.services.system_collector import (
+from services.system_collector import (
     SystemInfoCollector, HardwareInfoCollector, OperatingSystemCollector,
     RuntimeStatusCollector, NetworkInfoCollector,
     SystemInfoType, SystemInfo
 )
-from app.services.command_executor import CommandExecutor, CommandResult, ExecutionStatus, CommandType
-from app.services.ssh_manager import SSHConnectionConfig
+from services.command_executor import CommandExecutor, CommandResult, ExecutionStatus, CommandType
+from services.ssh_manager import SSHConnectionConfig
 
 
 class TestHardwareInfoCollector:

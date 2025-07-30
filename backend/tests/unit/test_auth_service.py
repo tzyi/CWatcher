@@ -8,11 +8,11 @@ import pytest
 from unittest.mock import Mock, patch
 import io
 
-from app.services.auth_service import (
+from services.auth_service import (
     AuthService, AuthenticationError, KeyValidationError, 
     SSHKeyType
 )
-from app.utils.encryption import AESGCMEncryption, EncryptionError
+from utils.encryption import AESGCMEncryption, EncryptionError
 
 
 class TestAuthService:
@@ -436,7 +436,7 @@ class TestAuthServiceHelpers:
     
     def test_encrypt_server_password(self):
         """測試加密伺服器密碼便利函數"""
-        from app.services.auth_service import encrypt_server_password
+        from services.auth_service import encrypt_server_password
         
         password = "TestPassword123"
         encrypted = encrypt_server_password(password)
@@ -446,7 +446,7 @@ class TestAuthServiceHelpers:
     
     def test_decrypt_server_password(self):
         """測試解密伺服器密碼便利函數"""
-        from app.services.auth_service import decrypt_server_password, encrypt_server_password
+        from services.auth_service import decrypt_server_password, encrypt_server_password
         
         password = "TestPassword123"
         encrypted = encrypt_server_password(password)
@@ -457,7 +457,7 @@ class TestAuthServiceHelpers:
     @patch('app.services.auth_service.auth_service.validate_private_key')
     def test_validate_ssh_key(self, mock_validate):
         """測試驗證 SSH 金鑰便利函數"""
-        from app.services.auth_service import validate_ssh_key
+        from services.auth_service import validate_ssh_key
         
         mock_validate.return_value = {
             "valid": True,

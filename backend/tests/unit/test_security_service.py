@@ -8,7 +8,7 @@ import pytest
 from unittest.mock import Mock, patch
 from datetime import datetime, timedelta
 
-from app.services.security_service import (
+from services.security_service import (
     SecurityService, SecurityLevel, SecurityEventType,
     SecurityEvent, RateLimitConfig, ConnectionAttempt
 )
@@ -454,7 +454,7 @@ class TestSecurityServiceHelpers:
     
     def test_check_connection_security(self):
         """測試連接安全檢查便利函數"""
-        from app.services.security_service import check_connection_security
+        from services.security_service import check_connection_security
         
         allowed, reason = check_connection_security(
             "127.0.0.1", "test-server", "admin"
@@ -465,7 +465,7 @@ class TestSecurityServiceHelpers:
     
     def test_validate_command_security(self):
         """測試指令安全驗證便利函數"""
-        from app.services.security_service import validate_command_security
+        from services.security_service import validate_command_security
         
         safe, reason = validate_command_security(
             "ls -la", "admin", "test-server"
@@ -484,7 +484,7 @@ class TestSecurityServiceHelpers:
     
     def test_record_security_event(self):
         """測試記錄安全事件便利函數"""
-        from app.services.security_service import record_security_event
+        from services.security_service import record_security_event
         
         initial_count = len(
             [e for e in security_service.security_events if e.event_type == SecurityEventType.CONNECTION_SUCCESS]
@@ -505,7 +505,7 @@ class TestSecurityServiceHelpers:
 # 全域服務實例測試
 def test_global_security_service():
     """測試全域安全服務實例"""
-    from app.services.security_service import security_service
+    from services.security_service import security_service
     
     assert security_service is not None
     assert hasattr(security_service, 'check_connection_allowed')

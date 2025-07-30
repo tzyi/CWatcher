@@ -10,14 +10,14 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Path, BackgroundTa
 from datetime import datetime, timedelta
 import logging
 
-from app.core.deps import get_db
-from app.schemas.metrics import (
+from core.deps import get_db
+from schemas.metrics import (
     MonitoringDataResponse, 
     MonitoringSummaryResponse,
     MetricTypeFilter,
     MonitoringThresholdsUpdate
 )
-from app.services.monitoring_collector import (
+from services.monitoring_collector import (
     monitoring_service,
     collect_server_monitoring_data,
     test_server_connection_and_monitoring,
@@ -25,9 +25,10 @@ from app.services.monitoring_collector import (
     AlertLevel,
     MonitoringThresholds
 )
-from app.services.ssh_manager import ssh_manager
-from app.models.server import Server
-from sqlalchemy.orm import Session
+from services.ssh_manager import ssh_manager
+from models.server import Server
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
 # 設定日誌
 logger = logging.getLogger(__name__)
@@ -39,7 +40,7 @@ router = APIRouter()
 @router.get("/servers/{server_id}/monitoring/summary", response_model=MonitoringSummaryResponse)
 async def get_server_monitoring_summary(
     server_id: int = Path(..., description="伺服器 ID"),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """
     取得伺服器監控數據摘要
@@ -52,7 +53,8 @@ async def get_server_monitoring_summary(
     """
     try:
         # 查詢伺服器資訊
-        server = db.query(Server).filter(Server.id == server_id).first()
+        result = await db.execute(select(Server).filter(Server.id == server_id))
+        server = result.scalar_one_or_none()
         if not server:
             raise HTTPException(status_code=404, detail=f"伺服器 {server_id} 不存在")
         
@@ -88,7 +90,7 @@ async def get_server_monitoring_summary(
 async def get_server_specific_metric(
     server_id: int = Path(..., description="伺服器 ID"),
     metric_type: str = Path(..., description="監控指標類型 (cpu/memory/disk/network)"),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """
     取得伺服器特定類型的詳細監控數據
@@ -104,7 +106,8 @@ async def get_server_specific_metric(
             )
         
         # 查詢伺服器資訊
-        server = db.query(Server).filter(Server.id == server_id).first()
+        result = await db.execute(select(Server).filter(Server.id == server_id))
+        server = result.scalar_one_or_none()
         if not server:
             raise HTTPException(status_code=404, detail=f"伺服器 {server_id} 不存在")
         
@@ -120,16 +123,16 @@ async def get_server_specific_metric(
         
         # 收集特定類型的監控數據
         if metric_enum == MetricType.CPU:
-            from app.services.monitoring_collector import collect_cpu_monitoring_data
+            from services.monitoring_collector import collect_cpu_monitoring_data
             metric_data = await collect_cpu_monitoring_data(config, server_id)
         elif metric_enum == MetricType.MEMORY:
-            from app.services.monitoring_collector import collect_memory_monitoring_data
+            from services.monitoring_collector import collect_memory_monitoring_data
             metric_data = await collect_memory_monitoring_data(config, server_id)
         elif metric_enum == MetricType.DISK:
-            from app.services.monitoring_collector import collect_disk_monitoring_data
+            from services.monitoring_collector import collect_disk_monitoring_data
             metric_data = await collect_disk_monitoring_data(config, server_id)
         elif metric_enum == MetricType.NETWORK:
-            from app.services.monitoring_collector import collect_network_monitoring_data
+            from services.monitoring_collector import collect_network_monitoring_data
             metric_data = await collect_network_monitoring_data(config, server_id)
         else:
             raise HTTPException(status_code=400, detail=f"不支援的監控指標: {metric_type}")
@@ -153,7 +156,7 @@ async def get_server_specific_metric(
 @router.get("/servers/{server_id}/monitoring/test")
 async def test_server_monitoring_connection(
     server_id: int = Path(..., description="伺服器 ID"),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """
     測試伺服器連接並收集基本監控數據
@@ -161,7 +164,8 @@ async def test_server_monitoring_connection(
     """
     try:
         # 查詢伺服器資訊
-        server = db.query(Server).filter(Server.id == server_id).first()
+        result = await db.execute(select(Server).filter(Server.id == server_id))
+        server = result.scalar_one_or_none()
         if not server:
             raise HTTPException(status_code=404, detail=f"伺服器 {server_id} 不存在")
         
@@ -197,14 +201,15 @@ async def test_server_monitoring_connection(
 async def get_server_alerts(
     server_id: int = Path(..., description="伺服器 ID"),
     alert_level: Optional[str] = Query(None, description="警告等級過濾 (ok/warning/critical/unknown)"),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """
     取得伺服器當前警告狀態
     """
     try:
         # 查詢伺服器資訊
-        server = db.query(Server).filter(Server.id == server_id).first()
+        result = await db.execute(select(Server).filter(Server.id == server_id))
+        server = result.scalar_one_or_none()
         if not server:
             raise HTTPException(status_code=404, detail=f"伺服器 {server_id} 不存在")
         
@@ -347,7 +352,7 @@ async def get_monitoring_thresholds():
 async def get_multiple_servers_monitoring(
     server_ids: str = Query(..., description="伺服器 ID 列表，用逗號分隔"),
     metric_types: Optional[str] = Query(None, description="監控指標類型，用逗號分隔 (cpu,memory,disk,network)"),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """
     批量取得多台伺服器的監控數據
@@ -372,7 +377,8 @@ async def get_multiple_servers_monitoring(
                 raise HTTPException(status_code=400, detail="監控指標類型格式錯誤")
         
         # 查詢伺服器資訊
-        servers = db.query(Server).filter(Server.id.in_(server_id_list)).all()
+        result = await db.execute(select(Server).filter(Server.id.in_(server_id_list)))
+        servers = result.scalars().all()
         if not servers:
             raise HTTPException(status_code=404, detail="未找到指定的伺服器")
         

@@ -11,7 +11,7 @@ from unittest.mock import Mock, patch, AsyncMock
 from datetime import datetime
 from sqlalchemy.orm import Session
 
-from app.services.monitoring_collector import (
+from services.monitoring_collector import (
     MonitoringCollectorService,
     monitoring_service,
     collect_server_monitoring_data,
@@ -20,9 +20,9 @@ from app.services.monitoring_collector import (
     AlertLevel,
     MonitoringThresholds
 )
-from app.services.ssh_manager import SSHConnectionConfig, ssh_manager
-from app.services.command_executor import CommandResult, ExecutionStatus, command_executor
-from app.models.server import Server
+from services.ssh_manager import SSHConnectionConfig, ssh_manager
+from services.command_executor import CommandResult, ExecutionStatus, command_executor
+from models.server import Server
 
 
 @pytest.fixture

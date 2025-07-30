@@ -10,7 +10,7 @@ import asyncio
 from unittest.mock import Mock, AsyncMock, patch
 from datetime import datetime
 
-from app.services.monitoring_collector import (
+from services.monitoring_collector import (
     CPUMonitor,
     MemoryMonitor,
     DiskMonitor,
@@ -21,8 +21,8 @@ from app.services.monitoring_collector import (
     AlertLevel,
     MonitoringData
 )
-from app.services.command_executor import CommandResult, ExecutionStatus
-from app.services.ssh_manager import SSHConnectionConfig
+from services.command_executor import CommandResult, ExecutionStatus
+from services.ssh_manager import SSHConnectionConfig
 
 
 @pytest.fixture

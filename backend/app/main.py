@@ -14,10 +14,16 @@ import traceback
 
 from core.config import settings, get_cors_origins
 from db.base import init_db, close_db
+from services.auth_service import AuthenticationError
+from utils.encryption import EncryptionError
+
+
+print('>>> [main.py] 啟動 main.py')
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    print('>>> [main.py] 進入 lifespan context manager')
     """應用程式生命週期管理"""
     # 啟動時執行
     print("🚀 CWatcher 後端服務啟動中...")
@@ -32,7 +38,7 @@ async def lifespan(app: FastAPI):
     
     # 啟動任務調度器
     try:
-        from app.services.task_scheduler import start_task_scheduler
+        from services.task_scheduler import start_task_scheduler
         await start_task_scheduler()
         print("✅ 任務調度器啟動完成")
     except Exception as e:
@@ -41,7 +47,7 @@ async def lifespan(app: FastAPI):
     
     # 啟動任務協調器
     try:
-        from app.services.task_coordinator import start_task_coordinator
+        from services.task_coordinator import start_task_coordinator
         await start_task_coordinator()
         print("✅ 任務協調器啟動完成")
     except Exception as e:
@@ -50,7 +56,7 @@ async def lifespan(app: FastAPI):
     
     # 初始化 WebSocket 管理器
     try:
-        from app.api.v1.endpoints.websocket import setup_websocket_manager
+        from api.v1.endpoints.websocket import setup_websocket_manager
         await setup_websocket_manager()
         print("✅ WebSocket 管理器初始化完成")
     except Exception as e:
@@ -63,7 +69,7 @@ async def lifespan(app: FastAPI):
     
     # 停止任務協調器
     try:
-        from app.services.task_coordinator import stop_task_coordinator
+        from services.task_coordinator import stop_task_coordinator
         await stop_task_coordinator()
         print("✅ 任務協調器已停止")
     except Exception as e:
@@ -71,7 +77,7 @@ async def lifespan(app: FastAPI):
     
     # 停止任務調度器
     try:
-        from app.services.task_scheduler import stop_task_scheduler
+        from services.task_scheduler import stop_task_scheduler
         await stop_task_scheduler()
         print("✅ 任務調度器已停止")
     except Exception as e:
@@ -79,7 +85,7 @@ async def lifespan(app: FastAPI):
     
     # 關閉 WebSocket 管理器
     try:
-        from app.api.v1.endpoints.websocket import shutdown_websocket_manager
+        from api.v1.endpoints.websocket import shutdown_websocket_manager
         await shutdown_websocket_manager()
         print("✅ WebSocket 管理器已關閉")
     except Exception as e:
@@ -156,6 +162,24 @@ async def global_exception_handler(request: Request, exc: Exception):
     )
 
 
+@app.exception_handler(AuthenticationError)
+async def auth_error_handler(request: Request, exc: AuthenticationError):
+    """認證錯誤處理器"""
+    return JSONResponse(
+        status_code=401,
+        content={"detail": f"認證錯誤: {str(exc)}"}
+    )
+
+
+@app.exception_handler(EncryptionError)
+async def encryption_error_handler(request: Request, exc: EncryptionError):
+    """加密錯誤處理器"""
+    return JSONResponse(
+        status_code=500,
+        content={"detail": f"加密錯誤: {str(exc)}"}
+    )
+
+
 # 包含 API 路由
 from api.v1.api import api_router
 app.include_router(api_router, prefix=settings.API_V1_STR)
@@ -174,14 +198,15 @@ async def root():
 @app.get("/health")
 async def health_check():
     """健康檢查端點"""
-    from app.db.base import engine
+    from db.base import engine
+    from sqlalchemy import text
     
     # 檢查資料庫連接
     db_status = "healthy"
     try:
         # 測試資料庫連接
         async with engine.connect() as conn:
-            await conn.execute("SELECT 1")
+            await conn.execute(text("SELECT 1"))
     except Exception as e:
         db_status = f"unhealthy: {str(e)}"
     
