@@ -21,6 +21,7 @@ from sqlalchemy import text, func, desc, and_, or_, delete
 from contextlib import asynccontextmanager
 
 from core.deps import get_db
+from db.base import get_sync_db
 from models.system_metrics import SystemMetrics
 from models.server import Server
 from core.config import settings
@@ -129,7 +130,7 @@ class DataCleaner:
     def __init__(self, archive_path: str = "backend/app/archives"):
         self.archive_path = Path(archive_path)
         self.archive_path.mkdir(parents=True, exist_ok=True)
-        self.db_session_factory = get_db
+        self.db_session_factory = get_sync_db
     
     async def cleanup_old_data(
         self,
@@ -186,7 +187,7 @@ class DataCleaner:
         stats = CleanupStats()
         
         try:
-            db = next(self.db_session_factory())
+            db = self.db_session_factory()
             try:
                 # 構建查詢條件
                 query = db.query(SystemMetrics).filter(
@@ -294,7 +295,7 @@ class DataCleaner:
         stats = CleanupStats()
         
         try:
-            db = next(self.db_session_factory())
+            db = self.db_session_factory()
             try:
                 # 構建刪除查詢
                 delete_query = delete(SystemMetrics).where(
@@ -378,7 +379,7 @@ class DataCleaner:
             
             # 計算資料庫大小
             try:
-                db = next(self.db_session_factory())
+                db = self.db_session_factory()
                 try:
                     # PostgreSQL 查詢資料庫大小
                     result = db.execute(text(
@@ -514,7 +515,7 @@ class DataCleaner:
             
             # 檢查舊數據數量
             try:
-                db = next(self.db_session_factory())
+                db = self.db_session_factory()
                 try:
                     # 檢查30天以上的數據
                     old_data_count = db.query(SystemMetrics).filter(

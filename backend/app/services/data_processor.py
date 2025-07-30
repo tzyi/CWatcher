@@ -18,6 +18,7 @@ from sqlalchemy import text, func, desc, asc
 from contextlib import asynccontextmanager
 
 from core.deps import get_db
+from db.base import get_sync_db
 from models.system_metrics import SystemMetrics
 from models.server import Server
 from services.monitoring_collector import MonitoringData, MetricType, AlertLevel
@@ -580,7 +581,7 @@ class BatchStorageManager:
     @asynccontextmanager
     async def _get_db_session(self):
         """取得數據庫會話"""
-        db = next(get_db())
+        db = get_sync_db()
         try:
             yield db
         finally:

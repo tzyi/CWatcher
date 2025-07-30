@@ -355,14 +355,14 @@ class TaskCoordinator:
         if conflicts_resolved > 0:
             self.stats.resource_conflicts_resolved += conflicts_resolved
             self.stats.optimization_savings_seconds += optimization_time
-            self.stats.last_optimization_time = datetime.now()
+            self.stats.last_optimization_time = datetime.now(timezone.utc)
             
             logger.info(f"任務執行優化完成：解決 {conflicts_resolved} 個衝突，耗時 {optimization_time:.2f}s")
     
     def _get_upcoming_tasks(self) -> List[str]:
         """獲取即將執行的任務列表"""
         upcoming_tasks = []
-        current_time = datetime.now()
+        current_time = datetime.now(timezone.utc)
         
         for task_id, task in task_scheduler.tasks.items():
             if task.enabled and task.next_run:
@@ -409,7 +409,16 @@ class TaskCoordinator:
         
         # 檢查任務最近是否成功執行
         if task.last_run and task.consecutive_failures == 0:
-            time_since_run = (datetime.now() - task.last_run).total_seconds()
+            # 確保時間比較一致性
+            current_time = datetime.now(timezone.utc) if hasattr(task.last_run, 'tzinfo') and task.last_run.tzinfo else datetime.now()
+            
+            # 如果 task.last_run 沒有時區信息，假設為當前系統時區
+            if hasattr(task.last_run, 'tzinfo') and task.last_run.tzinfo is None:
+                task_last_run = task.last_run
+            else:
+                task_last_run = task.last_run
+                
+            time_since_run = (current_time - task_last_run).total_seconds()
             return time_since_run < 3600  # 1小時內成功執行過
         
         return False

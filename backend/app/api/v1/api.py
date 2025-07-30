@@ -44,8 +44,15 @@ async def ping():
 @api_router.get("/health")
 async def api_health_check():
     """API 健康檢查端點"""
+    from datetime import datetime
+    timestamp = datetime.utcnow().isoformat() + "Z"
+    
     return {
+        "success": True,
+        "data": {
+            "status": "running",
+            "timestamp": timestamp
+        },
         "message": "CWatcher API v1 Service",
-        "version": "0.1.0",
-        "status": "running"
+        "timestamp": timestamp
     }

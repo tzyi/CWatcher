@@ -111,10 +111,15 @@ app = FastAPI(
 )
 
 # 設定 CORS 中間件
+cors_origins = get_cors_origins()
+if settings.ENVIRONMENT == "development":
+    # 開發環境允許所有來源
+    cors_origins = ["*"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=get_cors_origins(),
-    allow_credentials=True,
+    allow_origins=cors_origins,
+    allow_credentials=True if cors_origins != ["*"] else False,  # credentials 與 "*" 不兼容
     allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allow_headers=["*"],
 )

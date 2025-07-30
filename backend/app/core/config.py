@@ -36,8 +36,8 @@ class Settings(BaseSettings):
     # 測試資料庫
     TEST_DATABASE_URL: Optional[str] = None
     
-    # CORS 設定 - 直接使用字串，在應用中解析
-    BACKEND_CORS_ORIGINS: str = "http://localhost:3000,http://localhost:8080,http://127.0.0.1:3000,http://127.0.0.1:8080"
+    # CORS 設定 - 直接使用字串，在應用中解析  
+    BACKEND_CORS_ORIGINS: str = "http://localhost:3000,http://localhost:3001,http://localhost:8080,http://127.0.0.1:3000,http://127.0.0.1:3001,http://127.0.0.1:8080,http://192.168.10.165:3000,http://192.168.10.165:3001"
     
     # JWT 設定
     SECRET_KEY: str = "your-secret-key-change-in-production"

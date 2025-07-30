@@ -133,6 +133,11 @@ class Server(Base):
         return self.status == 'online'
     
     @property
+    def is_active(self) -> bool:
+        """檢查伺服器是否啟用監控"""
+        return self.monitoring_enabled and self.status in ('online', 'warning')
+    
+    @property
     def has_connection_issues(self) -> bool:
         """檢查是否有連接問題"""
         return self.connection_attempts > 3
